@@ -9,6 +9,10 @@ on:
 jobs:
   run-bot:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: job-bot
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -24,7 +28,7 @@ jobs:
       - name: Restore seen jobs cache
         uses: actions/cache@v4
         with:
-          path: seen_jobs.json
+          path: job-bot/seen_jobs.json
           key: seen-jobs-${{ github.run_id }}
           restore-keys: |
             seen-jobs-
@@ -39,5 +43,5 @@ jobs:
         uses: actions/cache/save@v4
         if: always()
         with:
-          path: seen_jobs.json
+          path: job-bot/seen_jobs.json
           key: seen-jobs-${{ github.run_id }}
