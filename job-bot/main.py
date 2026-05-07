@@ -9,7 +9,7 @@ from scrapers.myjobmag import scrape_myjobmag
 from scrapers.ngcareers import scrape_ngcareers
 from scrapers.telegram_channels import scrape_telegram_channels
 from filter import is_halal
-from sender import send_job
+from sender import send_job, test_send
 
 SEEN_JOBS_FILE = "seen_jobs.json"
 
@@ -25,30 +25,38 @@ def save_seen_jobs(seen):
 
 def run():
     print("🚀 Job Bot Starting...")
+
+    # First send a test message so we know Telegram is working
+    print("\n📨 Sending test message to Telegram...")
+    test_send()
+
     seen_jobs = load_seen_jobs()
+    print(f"📦 Already seen jobs: {len(seen_jobs)}")
     all_jobs = []
 
     scrapers = [
-        ("RemoteOK",        scrape_remoteok),
-        ("Arbeitnow",       scrape_arbeitnow),
-        ("TheMuse",         scrape_themuse),
-        ("WeWorkRemotely",  scrape_weworkremotely),
-        ("Jobberman",       scrape_jobberman),
-        ("MyJobMag",        scrape_myjobmag),
-        ("NGCareers",       scrape_ngcareers),
-        ("TelegramChannels",scrape_telegram_channels),
+        ("RemoteOK",         scrape_remoteok),
+        ("Arbeitnow",        scrape_arbeitnow),
+        ("TheMuse",          scrape_themuse),
+        ("WeWorkRemotely",   scrape_weworkremotely),
+        ("Jobberman",        scrape_jobberman),
+        ("MyJobMag",         scrape_myjobmag),
+        ("NGCareers",        scrape_ngcareers),
+        ("TelegramChannels", scrape_telegram_channels),
     ]
 
     for name, scraper in scrapers:
         try:
-            print(f"  📡 Scraping {name}...")
+            print(f"\n  📡 Scraping {name}...")
             jobs = scraper()
-            print(f"     Found {len(jobs)} jobs")
+            print(f"     ✅ Found {len(jobs)} jobs")
+            if jobs:
+                print(f"     First job: {jobs[0].get('title','?')} @ {jobs[0].get('company','?')}")
             all_jobs.extend(jobs)
         except Exception as e:
-            print(f"     ⚠️ {name} failed: {e}")
+            print(f"     ❌ {name} FAILED: {e}")
 
-    print(f"\n📋 Total jobs found: {len(all_jobs)}")
+    print(f"\n📋 Total jobs found across all sources: {len(all_jobs)}")
 
     new_count = 0
     skipped_haram = 0
