@@ -1,3 +1,7 @@
+"""
+sender.py — Sends a job listing to the Telegram channel
+"""
+
 import os
 import requests
 import time
@@ -19,6 +23,7 @@ def format_job(job: dict) -> str:
     tags = job.get("tags", "")
     experience = job.get("experience", "")
 
+    # Trim description to 300 chars
     if description and len(description) > 300:
         description = description[:300].strip() + "..."
 
@@ -30,14 +35,19 @@ def format_job(job: dict) -> str:
 
     if salary:
         lines.append(f"💰 {escape(salary)}")
+
     if experience:
         lines.append(f"📊 {escape(experience)}")
+
     if tags:
         lines.append(f"🏷️ {escape(tags)}")
+
     if description:
         lines.append(f"\n📋 _{escape(description)}_")
+
     if url:
         lines.append(f"\n🔗 [Apply Here]({url})")
+
     if source:
         lines.append(f"\n_Source: {escape(source)}_")
 
@@ -45,8 +55,10 @@ def format_job(job: dict) -> str:
 
 
 def escape(text: str) -> str:
+    """Escape special MarkdownV1 characters."""
     if not text:
         return ""
+    # Only escape characters that break Telegram markdown
     for ch in ["*", "_", "`"]:
         text = text.replace(ch, f"\\{ch}")
     return str(text)
@@ -54,28 +66,20 @@ def escape(text: str) -> str:
 
 def send_job(job: dict):
     message = format_job(job)
+
     payload = {
         "chat_id": CHANNEL_ID,
         "text": message,
         "parse_mode": "Markdown",
         "disable_web_page_preview": False,
     }
+
     response = requests.post(TELEGRAM_API, json=payload, timeout=10)
+
     if response.status_code != 200:
         print(f"     ⚠️ Telegram error: {response.text}")
     else:
         print(f"     ✅ Sent: {job.get('title','?')} @ {job.get('company','?')}")
+
+    # Respect Telegram rate limit (max 30 msgs/sec, we stay safe at 1/sec)
     time.sleep(1)
-
-
-def test_send():
-    payload = {
-        "chat_id": CHANNEL_ID,
-        "text": "✅ Halal Jobs Bot is connected and running! Jobs will appear below.",
-        "parse_mode": "Markdown",
-    }
-    response = requests.post(TELEGRAM_API, json=payload, timeout=10)
-    if response.status_code != 200:
-        print(f"     ❌ Telegram test FAILED: {response.text}")
-    else:
-        print(f"     ✅ Telegram test message sent successfully!")
