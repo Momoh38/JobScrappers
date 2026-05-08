@@ -1,8 +1,9 @@
 """
-filter.py — Halal job filter + English filter + Nigeria-friendly filter
+filter.py — Halal filter + English filter + Nigeria-friendly + Job preference filter
 """
 
 import re
+from config import INCLUDE_KEYWORDS, EXCLUDE_TITLES, MIN_DESCRIPTION_LENGTH
 
 HARAM_KEYWORDS = [
     # Gambling
@@ -79,6 +80,31 @@ def strip_html(text: str) -> str:
     return clean
 
 
+def matches_include_keywords(job: dict) -> bool:
+    """Job must match at least one INCLUDE keyword to pass."""
+    title = job.get("title", "").lower()
+    description = job.get("description", "").lower()
+    tags = job.get("tags", "").lower()
+    combined = f"{title} {description} {tags}"
+
+    for keyword in INCLUDE_KEYWORDS:
+        if keyword.lower() in combined:
+            return True
+
+    print(f"     📋 Filtered (no matching role): {job.get('title','?')}")
+    return False
+
+
+def matches_exclude_titles(job: dict) -> bool:
+    """Returns True if the job title matches an excluded title — should be rejected."""
+    title = job.get("title", "").lower()
+    for keyword in EXCLUDE_TITLES:
+        if keyword.lower() in title:
+            print(f"     🚷 Filtered (excluded title): {job.get('title','?')}")
+            return True
+    return False
+
+
 def is_english(text: str) -> bool:
     text_lower = text.lower()
     for keyword in FOREIGN_LANGUAGE_KEYWORDS:
@@ -109,11 +135,20 @@ def is_nigeria_friendly(job: dict) -> bool:
 
 
 def is_halal(job: dict) -> bool:
+    """Returns True only if job passes ALL filters."""
+
+    # Clean HTML from description first
     job["description"] = strip_html(job.get("description", ""))
 
+    # Check subscription sources
     source = job.get("source", "").lower()
     for sub in SUBSCRIPTION_SOURCES:
         if sub in source:
+            return False
+
+    # Minimum description length check
+    if MIN_DESCRIPTION_LENGTH > 0:
+        if len(job.get("description", "")) < MIN_DESCRIPTION_LENGTH:
             return False
 
     text = " ".join([
@@ -123,16 +158,27 @@ def is_halal(job: dict) -> bool:
         job.get("tags", ""),
     ]).lower()
 
+    # Haram filter
     for keyword in HARAM_KEYWORDS:
         if keyword.lower() in text:
             print(f"     🚫 Filtered (haram): '{keyword}' in: {job.get('title','?')}")
             return False
 
+    # English filter
     if not is_english(text):
         print(f"     🔤 Filtered (non-English): {job.get('title','?')}")
         return False
 
+    # Nigeria-friendly filter
     if not is_nigeria_friendly(job):
+        return False
+
+    # Excluded titles filter
+    if matches_exclude_titles(job):
+        return False
+
+    # Must match at least one wanted role
+    if not matches_include_keywords(job):
         return False
 
     return True
