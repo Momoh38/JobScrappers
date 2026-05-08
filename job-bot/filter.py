@@ -1,58 +1,51 @@
 """
 filter.py — All filtering logic:
-  1. Subscription source block
-  2. Haram keyword filter
-  3. English-only filter
-  4. Nigeria-friendly filter
-  5. Job preference filter (include/exclude)
-  6. Salary filter
-  7. Job age filter
-  + HTML cleaning, priority tagging, fuzzy duplicate detection
+  - Halal check
+  - English-only check
+  - Nigeria-friendly check
+  - Job preference check (include/exclude)
+  - Priority tagging
+  - Salary filter
+  - Age filter
+  - HTML cleaning
+  - Fuzzy duplicate detection
 """
 
 import re
-from datetime import datetime, timezone
+from difflib import SequenceMatcher
 from config import (
     INCLUDE_KEYWORDS, EXCLUDE_TITLES, PRIORITY_KEYWORDS,
-    MIN_DESCRIPTION_LENGTH, MIN_SALARY_USD, MIN_SALARY_NGN, MAX_JOB_AGE_DAYS,
+    MIN_SALARY_NGN, MIN_SALARY_USD,
+    MAX_JOB_AGE_DAYS, MIN_DESCRIPTION_LENGTH
 )
 
 HARAM_KEYWORDS = [
-    # Gambling
     "gambling", "casino", "bet ", "betting", "betway", "bet365", "1xbet",
     "sportybet", "lottery", "lotto", "jackpot", "poker", "slots", "roulette",
     "bookmaker", "odds", "wager", "sportsbook",
-    # Alcohol
     "alcohol", "alcoholic", "brewery", "brewing", "brewer", "winery", "wine",
     "beer", "lager", "spirits", "liquor", "distillery", "distilling", "vodka",
     "whiskey", "whisky", "cocktail", "bartender", "bar manager", "bar staff",
     "mixologist", "sommelier", "cellar",
-    # Nightlife
     "nightclub", "night club", "strip club", "stripclub", "gentlemen's club",
     "adult entertainment", "cabaret",
-    # Church / Religious non-Islamic
     "church", "pastor", "bishop", "diocese", "cathedral", "chapel",
     "missionary", "ministry of christ", "christian mission", "seminary",
     "reverend", "deacon", "convent", "monastery", "evangelical",
     "pentecostal church",
-    # Adult content
     "adult content", "onlyfans", "escort", "prostitut", "porn", "erotic",
     "nude", "nudity", "webcam model", "sex worker", "fetish",
-    # Pork
     "pork", "swine", "bacon", "ham producer", "pig farm", "hog farm",
-    # Riba
     "payday loan", "loan shark", "predatory lending",
-    # Tobacco
     "tobacco", "cigarette", "vape company", "e-cigarette manufacturer",
-    # Drugs
     "cannabis dispensary", "marijuana dispensary",
 ]
 
 FOREIGN_LANGUAGE_KEYWORDS = [
-    "deutsch", "german speaking", "german language",
-    "french speaking required", "en français",
-    "spanish speaking required", "en español",
-    "portuguese speaking", "em português",
+    "deutsch", "german speaking", "german language", "auf deutsch",
+    "françisch", "french speaking required", "en français",
+    "español", "spanish speaking required", "en español",
+    "português", "portuguese speaking", "em português",
     "mandarin speaking", "cantonese speaking", "japanese speaking",
     "arabic speaking required", "russian speaking", "dutch speaking",
     "italian speaking", "korean speaking", "hindi speaking required",
@@ -60,6 +53,7 @@ FOREIGN_LANGUAGE_KEYWORDS = [
     "fluent in portuguese", "fluent in dutch", "fluent in italian",
     "native german", "native french", "native spanish", "native dutch",
     "native japanese", "native korean", "native mandarin",
+    "muttersprachler", "langue maternelle",
 ]
 
 NON_NIGERIA_FRIENDLY = [
@@ -75,10 +69,9 @@ NON_NIGERIA_FRIENDLY = [
 
 SUBSCRIPTION_SOURCES = ["theladders", "job-hunt.org"]
 
+# In-memory fuzzy duplicate store (resets each run — that's fine)
+_seen_fingerprints = []
 
-# ---------------------------------------------------------------------------
-# HTML Cleaning
-# ---------------------------------------------------------------------------
 
 def strip_html(text: str) -> str:
     if not text:
@@ -94,98 +87,101 @@ def strip_html(text: str) -> str:
     return re.sub(r"\s+", " ", clean).strip()
 
 
-# ---------------------------------------------------------------------------
-# Fuzzy Duplicate Detection
-# ---------------------------------------------------------------------------
-
-def _normalise(text: str) -> str:
-    """Lowercase, strip punctuation and extra spaces for comparison."""
-    text = text.lower()
-    text = re.sub(r"[^\w\s]", "", text)
-    return re.sub(r"\s+", " ", text).strip()
-
-
-def is_fuzzy_duplicate(job: dict, seen_titles: set) -> bool:
+def is_fuzzy_duplicate(job: dict) -> bool:
     """
-    Checks if a job with a very similar title+company already exists.
-    Catches the same job listed on multiple platforms with different IDs.
+    Checks if a very similar job (same title + company) was already
+    seen THIS run from a different source. Uses fuzzy string matching.
     """
-    key = _normalise(f"{job.get('title', '')} {job.get('company', '')}")
-    if key in seen_titles:
-        return True
-    seen_titles.add(key)
+    fingerprint = f"{job.get('title','').lower().strip()} {job.get('company','').lower().strip()}"
+    for seen in _seen_fingerprints:
+        ratio = SequenceMatcher(None, fingerprint, seen).ratio()
+        if ratio >= 0.85:
+            print(f"     🔁 Fuzzy duplicate ({ratio:.0%} match): {job.get('title','?')}")
+            return True
+    _seen_fingerprints.append(fingerprint)
     return False
 
 
-# ---------------------------------------------------------------------------
-# Priority Tagging
-# ---------------------------------------------------------------------------
-
-def is_priority(job: dict) -> bool:
-    """Returns True if job matches any priority keyword."""
-    text = f"{job.get('title', '')} {job.get('description', '')}".lower()
-    return any(kw.lower() in text for kw in PRIORITY_KEYWORDS)
-
-
-# ---------------------------------------------------------------------------
-# Job Age Filter
-# ---------------------------------------------------------------------------
-
 def is_too_old(job: dict) -> bool:
-    """Returns True if job is older than MAX_JOB_AGE_DAYS."""
+    """Skip jobs older than MAX_JOB_AGE_DAYS if a date is available."""
     if MAX_JOB_AGE_DAYS == 0:
         return False
+    from datetime import datetime, timezone
     date_str = job.get("date_posted", "")
     if not date_str:
-        return False  # No date info — allow through
+        return False  # No date = don't discard, give benefit of doubt
     try:
-        posted = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
-        age = (datetime.now(timezone.utc) - posted).days
-        if age > MAX_JOB_AGE_DAYS:
-            print(f"     📅 Filtered (too old, {age}d): {job.get('title','?')}")
+        formats = ["%Y-%m-%dT%H:%M:%S", "%Y-%m-%d", "%d/%m/%Y", "%B %d, %Y"]
+        parsed = None
+        for fmt in formats:
+            try:
+                parsed = datetime.strptime(date_str[:19], fmt)
+                break
+            except Exception:
+                continue
+        if not parsed:
+            return False
+        now = datetime.now()
+        age_days = (now - parsed).days
+        if age_days > MAX_JOB_AGE_DAYS:
+            print(f"     📅 Filtered (too old, {age_days}d): {job.get('title','?')}")
             return True
     except Exception:
         pass
     return False
 
 
-# ---------------------------------------------------------------------------
-# Salary Filter
-# ---------------------------------------------------------------------------
-
-def is_below_min_salary(job: dict) -> bool:
-    """Returns True if salary is explicitly below configured minimums."""
-    if MIN_SALARY_USD == 0 and MIN_SALARY_NGN == 0:
+def is_salary_too_low(job: dict) -> bool:
+    """Skip jobs whose salary is explicitly below your minimum thresholds."""
+    if MIN_SALARY_NGN == 0 and MIN_SALARY_USD == 0:
         return False
-
     salary_text = job.get("salary", "").lower()
     if not salary_text:
-        return False  # No salary info — allow through
+        return False  # Unknown salary — don't reject
 
-    # Check USD
-    if MIN_SALARY_USD > 0:
-        usd_match = re.search(r"\$\s?([\d,]+)", salary_text)
-        if usd_match:
-            amount = int(usd_match.group(1).replace(",", ""))
-            if amount < MIN_SALARY_USD:
-                print(f"     💸 Filtered (low salary ${amount}): {job.get('title','?')}")
-                return True
+    # Try extract a number from salary text
+    numbers = re.findall(r"[\d,]+", salary_text.replace(",", ""))
+    if not numbers:
+        return False
+    amount = int(numbers[0])
 
-    # Check NGN
-    if MIN_SALARY_NGN > 0:
-        ngn_match = re.search(r"[₦N]\s?([\d,]+)", salary_text)
-        if ngn_match:
-            amount = int(ngn_match.group(1).replace(",", ""))
-            if amount < MIN_SALARY_NGN:
-                print(f"     💸 Filtered (low salary ₦{amount}): {job.get('title','?')}")
-                return True
-
+    if "₦" in salary_text or "ngn" in salary_text or "naira" in salary_text:
+        if MIN_SALARY_NGN > 0 and amount < MIN_SALARY_NGN:
+            print(f"     💰 Filtered (salary too low ₦{amount:,}): {job.get('title','?')}")
+            return True
+    elif "$" in salary_text or "usd" in salary_text:
+        if MIN_SALARY_USD > 0 and amount < MIN_SALARY_USD:
+            print(f"     💰 Filtered (salary too low ${amount:,}): {job.get('title','?')}")
+            return True
     return False
 
 
-# ---------------------------------------------------------------------------
-# Core Filters
-# ---------------------------------------------------------------------------
+def get_quality_score(job: dict) -> int:
+    """
+    Scores a job 1–5 based on how complete its listing is.
+    Shown as stars ⭐ in the Telegram message.
+    """
+    score = 1
+    if job.get("company"):
+        score += 0.5
+    if job.get("salary"):
+        score += 1
+    if len(job.get("description", "")) > 100:
+        score += 1
+    if job.get("url") and "http" in job.get("url", ""):
+        score += 0.5
+    if job.get("tags"):
+        score += 0.5
+    if job.get("experience"):
+        score += 0.5
+    return min(5, int(score))
+
+
+def is_priority(job: dict) -> bool:
+    """Returns True if the job matches any PRIORITY_KEYWORDS."""
+    text = f"{job.get('title','')} {job.get('description','')}".lower()
+    return any(kw.lower() in text for kw in PRIORITY_KEYWORDS)
+
 
 def is_english(text: str) -> bool:
     text_lower = text.lower()
@@ -201,63 +197,41 @@ def is_nigeria_friendly(job: dict) -> bool:
 
     if "nigeria" in combined:
         return True
-    for kw in NON_NIGERIA_FRIENDLY:
-        if kw in combined:
+    for keyword in NON_NIGERIA_FRIENDLY:
+        if keyword in combined:
             print(f"     🌍 Filtered (not Nigeria-friendly): {job.get('title','?')}")
             return False
-    remote_indicators = ["remote", "worldwide", "anywhere", "global", "international"]
-    if any(r in combined for r in remote_indicators):
+    if any(r in combined for r in ["remote", "worldwide", "anywhere", "global", "international"]):
         return True
     return True
 
 
-def matches_include_keywords(job: dict) -> bool:
-    combined = " ".join([
-        job.get("title", ""),
-        job.get("description", ""),
-        job.get("tags", ""),
-    ]).lower()
-    if any(kw.lower() in combined for kw in INCLUDE_KEYWORDS):
-        return True
-    print(f"     📋 Filtered (no matching role): {job.get('title','?')}")
-    return False
-
-
-def matches_exclude_titles(job: dict) -> bool:
-    title = job.get("title", "").lower()
-    for kw in EXCLUDE_TITLES:
-        if kw.lower() in title:
-            print(f"     🚷 Filtered (excluded title): {job.get('title','?')}")
-            return True
-    return False
-
-
-# ---------------------------------------------------------------------------
-# Master Filter
-# ---------------------------------------------------------------------------
-
 def is_halal(job: dict) -> bool:
-    """Returns True only if job passes ALL filters."""
+    """Master filter — returns True only if job passes ALL checks."""
 
-    # Clean HTML first
+    # 1. Clean HTML first
     job["description"] = strip_html(job.get("description", ""))
 
-    # 1. Subscription source
+    # 2. Subscription source
     source = job.get("source", "").lower()
     if any(sub in source for sub in SUBSCRIPTION_SOURCES):
         return False
 
-    # 2. Minimum description length
+    # 3. Minimum description
     if MIN_DESCRIPTION_LENGTH > 0:
         if len(job.get("description", "")) < MIN_DESCRIPTION_LENGTH:
             return False
 
-    # 3. Job age
+    # 4. Too old
     if is_too_old(job):
         return False
 
-    # 4. Salary minimum
-    if is_below_min_salary(job):
+    # 5. Salary too low
+    if is_salary_too_low(job):
+        return False
+
+    # 6. Fuzzy duplicate (same job from multiple sources)
+    if is_fuzzy_duplicate(job):
         return False
 
     text = " ".join([
@@ -267,30 +241,36 @@ def is_halal(job: dict) -> bool:
         job.get("tags", ""),
     ]).lower()
 
-    # 5. Haram filter
-    for kw in HARAM_KEYWORDS:
-        if kw.lower() in text:
-            print(f"     🚫 Filtered (haram '{kw}'): {job.get('title','?')}")
+    # 7. Haram keywords
+    for keyword in HARAM_KEYWORDS:
+        if keyword.lower() in text:
+            print(f"     🚫 Filtered (haram): '{keyword}' in: {job.get('title','?')}")
             return False
 
-    # 6. English only
+    # 8. English only
     if not is_english(text):
         print(f"     🔤 Filtered (non-English): {job.get('title','?')}")
         return False
 
-    # 7. Nigeria-friendly
+    # 9. Nigeria-friendly
     if not is_nigeria_friendly(job):
         return False
 
-    # 8. Excluded titles
-    if matches_exclude_titles(job):
+    # 10. Excluded titles
+    title_lower = job.get("title", "").lower()
+    for keyword in EXCLUDE_TITLES:
+        if keyword.lower() in title_lower:
+            print(f"     🚷 Filtered (excluded): {job.get('title','?')}")
+            return False
+
+    # 11. Must match at least one wanted role
+    combined = f"{title_lower} {job.get('description','').lower()} {job.get('tags','').lower()}"
+    if not any(kw.lower() in combined for kw in INCLUDE_KEYWORDS):
+        print(f"     📋 Filtered (no matching role): {job.get('title','?')}")
         return False
 
-    # 9. Must match a wanted role
-    if not matches_include_keywords(job):
-        return False
-
-    # Tag as priority if applicable
-    job["priority"] = is_priority(job)
+    # 12. Tag quality score and priority onto the job for sender to use
+    job["_quality"] = get_quality_score(job)
+    job["_priority"] = is_priority(job)
 
     return True
