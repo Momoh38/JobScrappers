@@ -1,13 +1,13 @@
 # =============================================================================
 # config.py — Your personal job preferences
-# This is the ONLY file you need to edit to customise the bot
+# Edit this file to control exactly what jobs you receive
 # =============================================================================
 
+# -----------------------------------------------------------------------------
+# INCLUDE — Job titles/roles you WANT to see
+# A job must match at least ONE keyword from this list to be sent to you
+# -----------------------------------------------------------------------------
 
-# -----------------------------------------------------------------------------
-# INCLUDE KEYWORDS — Roles you WANT to receive
-# A job must match at least ONE of these to reach your Telegram channel
-# -----------------------------------------------------------------------------
 INCLUDE_KEYWORDS = [
     # Virtual & Admin
     "virtual assistant", "executive assistant", "personal assistant",
@@ -68,58 +68,47 @@ INCLUDE_KEYWORDS = [
     "remote", "work from home", "telecommute", "freelance", "contract",
 ]
 
+# -----------------------------------------------------------------------------
+# PRIORITY KEYWORDS — Jobs matching these get a 🔴 PRIORITY tag in Telegram
+# Use for roles you are actively hunting RIGHT NOW
+# -----------------------------------------------------------------------------
 
-# -----------------------------------------------------------------------------
-# PRIORITY KEYWORDS — Roles you urgently want — tagged 🔴 in Telegram
-# These still must pass all filters, but get a priority flag on the message
-# -----------------------------------------------------------------------------
 PRIORITY_KEYWORDS = [
     "virtual assistant",
     "customer support",
-    "customer service",
-    "remote customer",
+    "remote customer service",
     "data entry",
     "content writer",
     "social media manager",
 ]
 
+# -----------------------------------------------------------------------------
+# EXCLUDE TITLES — Block specific titles even if they pass the halal filter
+# -----------------------------------------------------------------------------
 
-# -----------------------------------------------------------------------------
-# EXCLUDE TITLES — Roles to always block regardless of other filters
-# -----------------------------------------------------------------------------
 EXCLUDE_TITLES = [
     "cdl driver", "truck driver", "warehouse", "factory worker",
 ]
 
-
 # -----------------------------------------------------------------------------
 # MINIMUM SALARY FILTER
-# Set a value to skip jobs with salaries explicitly below this threshold.
-# Uses simple pattern matching — only works when salary is clearly stated.
-# Examples: 300 (USD/month), 100000 (NGN/month)
-# Set to 0 to disable.
+# Jobs that explicitly show a salary BELOW these thresholds are skipped
+# Set to 0 to disable. Amounts are monthly.
 # -----------------------------------------------------------------------------
-MIN_SALARY_USD = 0       # e.g. 300 — skip jobs paying less than $300/month
-MIN_SALARY_NGN = 0       # e.g. 100000 — skip jobs paying less than ₦100k/month
 
+MIN_SALARY_NGN = 0       # e.g. 80000 to skip jobs below ₦80,000/month
+MIN_SALARY_USD = 0       # e.g. 300 to skip jobs below $300/month
 
 # -----------------------------------------------------------------------------
 # JOB AGE FILTER
-# Skip jobs older than this many days. Set to 0 to disable.
+# Skip jobs older than this many days (0 = disabled)
 # -----------------------------------------------------------------------------
-MAX_JOB_AGE_DAYS = 10
 
+MAX_JOB_AGE_DAYS = 14
 
 # -----------------------------------------------------------------------------
 # MINIMUM DESCRIPTION LENGTH
-# Set to 0 to allow all. Set to e.g. 50 to skip jobs with no description.
+# Set to 0 to allow all jobs regardless of description length
 # -----------------------------------------------------------------------------
+
 MIN_DESCRIPTION_LENGTH = 0
-
-
-# -----------------------------------------------------------------------------
-# STATS & HEALTH — Controls for reporting features
-# -----------------------------------------------------------------------------
-SEND_RUN_STATS = True          # Send a stats summary message after each run
-HEALTH_CHECK_THRESHOLD = 3     # Alert if a scraper fails this many runs in a row
-SEND_WEEKLY_REPORT = True      # Send a scraper health report every Sunday
