@@ -107,7 +107,7 @@ MIN_SALARY_NGN = 0       # e.g. 100000 — skip jobs paying less than ₦100k/mo
 # JOB AGE FILTER
 # Skip jobs older than this many days. Set to 0 to disable.
 # -----------------------------------------------------------------------------
-MAX_JOB_AGE_DAYS = 14
+MAX_JOB_AGE_DAYS = 10
 
 
 # -----------------------------------------------------------------------------
