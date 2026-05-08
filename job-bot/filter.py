@@ -59,7 +59,7 @@ NON_NIGERIA_FRIENDLY = [
     "must be located in us", "physically located in the us",
     "us citizen", "us citizenship required",
     "security clearance", "nato clearance",
-    "australian residents only", "new zealand only",
+    "australian residents only", "new zealand only", "united kingdom citizens only", "united kingdom residents only"
 ]
 
 SUBSCRIPTION_SOURCES = ["theladders", "job-hunt.org"]
