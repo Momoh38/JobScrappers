@@ -2,7 +2,7 @@ name: Halal Jobs Bot
 
 on:
   schedule:
-    - cron: "0 * * * *"   # Every hour, on the hour
+    - cron: "0 * * * *"   # Every hour, 24/7
   workflow_dispatch:
 
 jobs:
