@@ -29,7 +29,7 @@ from scrapers.doballi         import scrape_doballi
 from scrapers.jobgurus        import scrape_jobgurus
 from scrapers.telegram_channels import scrape_telegram_channels
 from scrapers.twitter_jobs    import scrape_twitter_jobs
-from scrapers.freelance       import scrape_freelance
+"from scrapers.freelance       import scrape_freelance
 from scrapers.ngo_jobs        import scrape_ngo_jobs
 from scrapers.africa_jobs     import scrape_africa_jobs
 from scrapers.linkedin_rss    import scrape_linkedin_rss
