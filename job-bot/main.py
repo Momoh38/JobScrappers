@@ -27,7 +27,7 @@ from scrapers.grabjobs        import scrape_grabjobs
 from scrapers.jooble          import scrape_jooble
 from scrapers.doballi         import scrape_doballi
 from scrapers.jobgurus        import scrape_jobgurus
-#from scrapers.telegram_channels import scrape_telegram_channels
+from scrapers.telegram_channels import scrape_telegram_channels
 #from scrapers.twitter_jobs    import scrape_twitter_jobs
 #from scrapers.freelance       import scrape_freelance
 from scrapers.ngo_jobs        import scrape_ngo_jobs
