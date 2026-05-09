@@ -19,8 +19,8 @@ from scrapers.jobgurus        import scrape_jobgurus
 from scrapers.telegram_channels import scrape_telegram_channels
 from scrapers.ngo_jobs        import scrape_ngo_jobs
 from scrapers.africa_jobs     import scrape_africa_jobs
-from scrapers.virtustant      import scrape_virtustant
 from scrapers.twitter_jobs    import scrape_twitter_jobs
+
 
 #Suspended To Scrape from
 #from scrapers.remotive        import scrape_remotive
@@ -35,6 +35,10 @@ from scrapers.twitter_jobs    import scrape_twitter_jobs
 #from scrapers.oneforma        import scrape_oneforma
 #from scrapers.freelance       import scrape_freelance
 #from scrapers.linkedin_rss    import scrape_linkedin_rss
+
+#REMOVED FOR NOW (YOU CAN ADD IF YOU WANT)
+#from scrapers.virtustant      import scrape_virtustant
+
 
 from filter import is_halal
 from sender import send_job, send_stats, send_health_alert
@@ -132,8 +136,6 @@ def run():
         # Global Remote (API-based, most reliable)
         #The Ones Presenly To Use
         ("RemoteOK",         scrape_remoteok),
-        ("Virtustant",       scrape_virtustant),
-        
         # Nigeria-specific
         ("Indeed Nigeria",   scrape_indeed_ng),
         ("Jobberman",        scrape_jobberman),
@@ -164,6 +166,7 @@ def run():
         #("OneForma",         scrape_oneforma),
         #("LinkedIn RSS",     scrape_linkedin_rss),
         #("Freelance",        scrape_freelance),
+        #("Virtustant",       scrape_virtustant),
     ]
 
     all_jobs      = []
