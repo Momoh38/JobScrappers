@@ -8,17 +8,6 @@ import os
 from datetime import datetime
 
 from scrapers.remoteok        import scrape_remoteok
-#from scrapers.remotive        import scrape_remotive
-#from scrapers.arbeitnow       import scrape_arbeitnow
-#from scrapers.themuse         import scrape_themuse
-#from scrapers.weworkremotely  import scrape_weworkremotely
-#from scrapers.workingnomads   import scrape_workingnomads
-#from scrapers.braintrust      import scrape_braintrust
-#from scrapers.dailyremote     import scrape_dailyremote
-#from scrapers.dynamitejobs    import scrape_dynamitejobs
-#from scrapers.startupjobs     import scrape_startupjobs
-from scrapers.virtustant      import scrape_virtustant
-#from scrapers.oneforma        import scrape_oneforma
 from scrapers.indeed_ng       import scrape_indeed_ng
 from scrapers.jobberman       import scrape_jobberman
 from scrapers.myjobmag        import scrape_myjobmag
@@ -28,10 +17,23 @@ from scrapers.jooble          import scrape_jooble
 from scrapers.doballi         import scrape_doballi
 from scrapers.jobgurus        import scrape_jobgurus
 from scrapers.telegram_channels import scrape_telegram_channels
-#from scrapers.twitter_jobs    import scrape_twitter_jobs
-#from scrapers.freelance       import scrape_freelance
 from scrapers.ngo_jobs        import scrape_ngo_jobs
 from scrapers.africa_jobs     import scrape_africa_jobs
+from scrapers.virtustant      import scrape_virtustant
+
+#Suspended To Scrape from
+#from scrapers.remotive        import scrape_remotive
+#from scrapers.arbeitnow       import scrape_arbeitnow
+#from scrapers.themuse         import scrape_themuse
+#from scrapers.weworkremotely  import scrape_weworkremotely
+#from scrapers.workingnomads   import scrape_workingnomads
+#from scrapers.braintrust      import scrape_braintrust
+#from scrapers.dailyremote     import scrape_dailyremote
+#from scrapers.dynamitejobs    import scrape_dynamitejobs
+#from scrapers.startupjobs     import scrape_startupjobs
+#from scrapers.oneforma        import scrape_oneforma
+#from scrapers.twitter_jobs    import scrape_twitter_jobs
+#from scrapers.freelance       import scrape_freelance
 #from scrapers.linkedin_rss    import scrape_linkedin_rss
 
 from filter import is_halal
