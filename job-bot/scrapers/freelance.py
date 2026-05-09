@@ -2,7 +2,7 @@
 scrapers/freelance.py — Freelance job platforms open to Nigerians, free to apply.
 Covers: PeoplePerHour, Guru.com, Freelancer job listings (no paid membership needed to apply).
 NOTE: Upwork excluded (requires paid connects to apply).
-"""
+
 
 import requests
 import hashlib
@@ -158,3 +158,4 @@ def _scrape_freelancer_projects() -> list:
     except Exception as e:
         print(f"     ⚠️ Freelancer.com failed: {e}")
     return jobs
+"""
