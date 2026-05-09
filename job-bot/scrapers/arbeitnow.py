@@ -1,6 +1,6 @@
 """
 scrapers/arbeitnow.py — Scrapes Arbeitnow free jobs API
-"""
+
 
 import requests
 
@@ -43,3 +43,4 @@ def scrape_arbeitnow() -> list:
         page += 1
 
     return jobs
+"""
