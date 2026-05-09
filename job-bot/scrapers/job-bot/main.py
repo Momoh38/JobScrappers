@@ -1,7 +1,7 @@
 import json
 import os
 from scrapers.remoteok import scrape_remoteok
-from scrapers.arbeitnow import scrape_arbeitnow
+"from scrapers.arbeitnow import scrape_arbeitnow
 from scrapers.themuse import scrape_themuse
 from scrapers.weworkremotely import scrape_weworkremotely
 from scrapers.jobberman import scrape_jobberman
