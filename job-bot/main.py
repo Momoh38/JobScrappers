@@ -20,6 +20,7 @@ from scrapers.telegram_channels import scrape_telegram_channels
 from scrapers.ngo_jobs        import scrape_ngo_jobs
 from scrapers.africa_jobs     import scrape_africa_jobs
 from scrapers.virtustant      import scrape_virtustant
+from scrapers.twitter_jobs    import scrape_twitter_jobs
 
 #Suspended To Scrape from
 #from scrapers.remotive        import scrape_remotive
@@ -32,7 +33,6 @@ from scrapers.virtustant      import scrape_virtustant
 #from scrapers.dynamitejobs    import scrape_dynamitejobs
 #from scrapers.startupjobs     import scrape_startupjobs
 #from scrapers.oneforma        import scrape_oneforma
-#from scrapers.twitter_jobs    import scrape_twitter_jobs
 #from scrapers.freelance       import scrape_freelance
 #from scrapers.linkedin_rss    import scrape_linkedin_rss
 
