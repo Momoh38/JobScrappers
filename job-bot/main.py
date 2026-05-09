@@ -20,25 +20,23 @@ from scrapers.telegram_channels import scrape_telegram_channels
 from scrapers.ngo_jobs        import scrape_ngo_jobs
 from scrapers.africa_jobs     import scrape_africa_jobs
 from scrapers.twitter_jobs    import scrape_twitter_jobs
-
+from scrapers.virtustant      import scrape_virtustant
+from scrapers.braintrust      import scrape_braintrust
+from scrapers.dailyremote     import scrape_dailyremote
+from scrapers.workingnomads   import scrape_workingnomads
 
 #Suspended To Scrape from
 #from scrapers.remotive        import scrape_remotive
 #from scrapers.arbeitnow       import scrape_arbeitnow
 #from scrapers.themuse         import scrape_themuse
 #from scrapers.weworkremotely  import scrape_weworkremotely
-#from scrapers.workingnomads   import scrape_workingnomads
-#from scrapers.braintrust      import scrape_braintrust
-#from scrapers.dailyremote     import scrape_dailyremote
-#from scrapers.dynamitejobs    import scrape_dynamitejobs
-#from scrapers.startupjobs     import scrape_startupjobs
+#from scrapers.dynamitejobs    import scrape_dynamitejobs (For Abroad)
 #from scrapers.oneforma        import scrape_oneforma
 #from scrapers.freelance       import scrape_freelance
 #from scrapers.linkedin_rss    import scrape_linkedin_rss
 
 #REMOVED FOR NOW (YOU CAN ADD IF YOU WANT)
-#from scrapers.virtustant      import scrape_virtustant
-
+#from scrapers.startupjobs     import scrape_startupjobs
 
 from filter import is_halal
 from sender import send_job, send_stats, send_health_alert
@@ -134,8 +132,13 @@ def run():
 
     scrapers = [
         # Global Remote (API-based, most reliable)
-        #The Ones Presenly To Use
+        #The Ones opened
+        
         ("RemoteOK",         scrape_remoteok),
+        ("Virtustant",       scrape_virtustant),
+        ("Braintrust",       scrape_braintrust),
+        ("DailyRemote",      scrape_dailyremote),
+        ("WorkingNomads",    scrape_workingnomads),
         # Nigeria-specific
         ("Indeed Nigeria",   scrape_indeed_ng),
         ("Jobberman",        scrape_jobberman),
@@ -145,7 +148,6 @@ def run():
         ("Jooble Nigeria",   scrape_jooble),
         ("Doballi",          scrape_doballi),
         ("JobGurus",         scrape_jobgurus),
-
         ("NGO / UN Jobs",    scrape_ngo_jobs),
         ("Africa Jobs",      scrape_africa_jobs),
         
@@ -158,15 +160,15 @@ def run():
         #("Arbeitnow",        scrape_arbeitnow),
         #("TheMuse",          scrape_themuse),
         #("WeWorkRemotely",   scrape_weworkremotely),
-        #("WorkingNomads",    scrape_workingnomads),
-        #("Braintrust",       scrape_braintrust),
-        #("DailyRemote",      scrape_dailyremote),
+        #
+        #
+        #
         #("DynamiteJobs",     scrape_dynamitejobs),
         #("StartupJobs",      scrape_startupjobs),
         #("OneForma",         scrape_oneforma),
         #("LinkedIn RSS",     scrape_linkedin_rss),
         #("Freelance",        scrape_freelance),
-        #("Virtustant",       scrape_virtustant),
+        #
     ]
 
     all_jobs      = []
