@@ -232,9 +232,9 @@ def run():
     save_json(STATS_FILE, history[-500:])  # Keep last 500 runs
 
     # Send stats to Telegram if any jobs were sent or every 6 hours
-    current_hour = datetime.now().hour
-    if new_count > 0 or current_hour in [7, 13, 19]:
-        send_stats(stats)
+    #current_hour = datetime.now().hour
+    #if new_count > 0 or current_hour in [7, 13, 19]:
+    #    send_stats(stats)
 
     # Weekly report on Sundays
     maybe_send_weekly_report(health, history)
