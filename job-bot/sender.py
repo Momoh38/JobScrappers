@@ -22,7 +22,21 @@ CATEGORIES = {
     "📞 Customer Support": [
         "customer support", "customer service", "customer success",
         "customer care", "client support", "help desk", "live chat",
-        "chat support", "technical support",
+        "chat support", "technical support", "Customer Service", "Virtual Assistance",
+        "Customer Service","Virtual Assistance", "Customer Support", "Email Support",
+        "Customer Experience", "Call Center Management", "Phone Support", "Jira",
+        "Customer Experience Management Software", "Leadership Training", 
+        "Customer Satisfaction","Multitasking", "Answered Ticket", "Interpersonal Skills",
+        "Ticketing System", "Online Chat Support", "Customer Service Training", "Retail & Consumer Goods",
+        "English", "US English Dialect", "Product Knowledge","Email Communication","Email Management Software",
+        "CRM System", "Helpdesk Platform", "Administrative Support", "CRM Software", "Data Entry", "Troubleshooting",
+        "Communication Skills", "Quality Assurance", "Analytics", "Software Debugging", "Tools", "Zendesk", "Slack",
+        "Chargebee", "Google Suite", "Zoom", "Sendgrid", "Amplitude", "Zoom Video Conferencing", "Communications", "Sales",
+        "Order Tracking", "Scheduling", "Calendar Management", "Microsoft Excel", "Microsoft Office", "Google Workspace","Monday.com",
+        "Intercom", "prop firm", "Forex Trading", "Communication Etiquette", "File Management", "Social Media Management"
+
+
+
     ],
     "🖊️ Writing & Content": [
         "writer", "copywriter", "editor", "proofreader", "content",
