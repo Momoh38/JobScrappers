@@ -151,7 +151,7 @@ def run():
         ("Doballi",          scrape_doballi),
         ("JobGurus",         scrape_jobgurus),
         # New sources
-        ("Freelance",        scrape_freelance),
+        "(Freelance,        scrape_freelance)",
         ("NGO / UN Jobs",    scrape_ngo_jobs),
         ("Africa Jobs",      scrape_africa_jobs),
         # Social Media
