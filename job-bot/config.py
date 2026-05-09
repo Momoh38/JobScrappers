@@ -12,13 +12,38 @@ INCLUDE_KEYWORDS = [
     # Virtual & Admin
     "virtual assistant", "executive assistant", "personal assistant",
     "administrative assistant", "admin assistant", "office assistant",
-    "data entry", "data entry clerk", "data entry operator",
+    "data entry", "data entry clerk", "data entry operator", "Virtual Assistant", 
+    "Administrative Support", "Calendar Management", "Scheduling", "File Management",
+    "Travel Arrangements", "Meeting Coordination", "Document Preparation", "Time Management",
+    "Task Prioritization", "Project Coordination", "Client Communication", "Project Management Tools",
+    "Trello", "Asana", "Expense Reporting", "Invoice Processing", "Social Media Management", "Content Scheduling",
+    "Newsletter Management", "Mailchimp", "Research", "Lead Generation", "Data Management", "Spreadsheet Management",
+    "Google Sheets", "Appointment Setting", "Reminder Follow-ups", "Confidentiality", "Attention to Detail", "Problem Solving",
+    "Organization", "Remote Support", "Executive Assistance", "Personal Assistant"
 
     # Customer Support
     "customer support", "customer service", "customer success",
     "customer care", "client support", "client success",
     "help desk", "technical support", "support agent",
     "support specialist", "live chat agent", "chat support",
+    "Customer Service", "Virtual Assistance", "Customer Support",
+    "Email Support", "Customer Experience", "Call Center Management",
+    "Phone Support", "Customer Experience Management Software",
+    "Leadership Training", "Jira", "Customer Satisfaction",
+    "Multitasking", "Answered Ticket", "Interpersonal Skills",
+    "Ticketing System", "Online Chat Support", "KPI Metric Development",
+    "Customer Service Training", "Retail & Consumer Goods", "English",
+    "US English Dialect", "Product Knowledge", "Email Communication",
+    "Email Management Software", "CRM System", "Helpdesk Platform",
+    "Administrative Support", "CRM Software", "Data Entry",
+    "Troubleshooting", "Communication Skills", "Quality Assurance",
+    "Analytics", "Software Debugging", "Tools", "Zendesk", "Slack",
+    "Chargebee", "Google Suite", "Zoom", "Sendgrid", "Amplitude",
+    "Zoom Video Conferencing", "Communications", "Sales",
+    "Order Tracking", "Scheduling", "Calendar Management",
+    "Microsoft Excel", "Microsoft Office", "Google Workspace",
+    "Canva", "Monday.com", "Intercom", "prop firm", "Forex Trading",
+    "Communication Etiquette", "File Management", "Social Media Management"
 
     # Writing & Content
     "content writer", "copywriter", "copy editor", "proofreader",
