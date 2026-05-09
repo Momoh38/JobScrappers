@@ -45,6 +45,14 @@ CATEGORIES = {
     "🗂️ Virtual & Admin": [
         "virtual assistant", "administrative", "admin", "data entry",
         "executive assistant", "personal assistant", "office assistant",
+        "Virtual Assistant", "Administrative Support", "Calendar Management",
+        "Scheduling", "File Management", "Travel Arrangements", "Meeting Coordination",
+        "Document Preparation", "Time Management", "Task Prioritization", "Project Coordination",
+        "Client Communication", "Project Management Tools", "Trello", "Asana", "Expense Reporting",
+        "Invoice Processing", "Social Media Management", "Content Scheduling", "Newsletter Management",
+        "Mailchimp", "Research", "Lead Generation", "Data Management", "Spreadsheet Management", "Google Sheets",
+        "Appointment Setting", "Reminder Follow-ups", "Confidentiality", "Attention to Detail", "Problem Solving",
+        "Organization", "Remote Support", "Executive Assistance", "Personal Assistant"
     ],
     "📊 Data & Analytics": [
         "data analyst", "data scientist", "business analyst",
