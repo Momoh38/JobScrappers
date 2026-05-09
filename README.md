@@ -1,6 +1,6 @@
 # 🕌 Halal Jobs Bot
 
-A fully automated job alert bot that scrapes **26 job platforms** across the web and social media, filters out haram industries, enforces English-only listings, checks Nigeria/remote eligibility, and delivers each matching job as a formatted message directly to your private **Telegram channel** every hour, every day, for free.
+A fully automated job alert bot that scrapes **different job platforms** across the web and social media, filters out haram industries, enforces English-only listings, checks Nigeria/remote eligibility, and delivers each matching job as a formatted message directly to your private **Telegram channel** every hour, every day, for free.
 
 ---
 
