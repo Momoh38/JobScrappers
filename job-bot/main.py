@@ -128,7 +128,28 @@ def run():
 
     scrapers = [
         # Global Remote (API-based, most reliable)
+        #The Ones Presenly To Use
         ("RemoteOK",         scrape_remoteok),
+        ("Virtustant",       scrape_virtustant),
+        
+        # Nigeria-specific
+        ("Indeed Nigeria",   scrape_indeed_ng),
+        ("Jobberman",        scrape_jobberman),
+        ("MyJobMag",         scrape_myjobmag),
+        ("NGCareers",        scrape_ngcareers),
+        ("GrabJobs",         scrape_grabjobs),
+        ("Jooble Nigeria",   scrape_jooble),
+        ("Doballi",          scrape_doballi),
+        ("JobGurus",         scrape_jobgurus),
+
+        ("NGO / UN Jobs",    scrape_ngo_jobs),
+        ("Africa Jobs",      scrape_africa_jobs),
+        
+        # Social Media
+        ("Telegram",         scrape_telegram_channels),
+        ("X / Twitter",      scrape_twitter_jobs),
+        ###############################################################
+        # The Other Ones Avaailable to use
         #("Remotive",         scrape_remotive),
         #("Arbeitnow",        scrape_arbeitnow),
         #("TheMuse",          scrape_themuse),
@@ -138,25 +159,9 @@ def run():
         #("DailyRemote",      scrape_dailyremote),
         #("DynamiteJobs",     scrape_dynamitejobs),
         #("StartupJobs",      scrape_startupjobs),
-        #("Virtustant",       scrape_virtustant),
         #("OneForma",         scrape_oneforma),
         #("LinkedIn RSS",     scrape_linkedin_rss),
-        # Nigeria-specific
-        #("Indeed Nigeria",   scrape_indeed_ng),
-        #("Jobberman",        scrape_jobberman),
-        #("MyJobMag",         scrape_myjobmag),
-        #("NGCareers",        scrape_ngcareers),
-        #("GrabJobs",         scrape_grabjobs),
-        #("Jooble Nigeria",   scrape_jooble),
-        #("Doballi",          scrape_doballi),
-        #("JobGurus",         scrape_jobgurus),
-        # New sources
         #("Freelance",        scrape_freelance),
-        #("NGO / UN Jobs",    scrape_ngo_jobs),
-        #("Africa Jobs",      scrape_africa_jobs),
-        # Social Media
-        #("Telegram",         scrape_telegram_channels),
-        #("X / Twitter",      scrape_twitter_jobs),
     ]
 
     all_jobs      = []
