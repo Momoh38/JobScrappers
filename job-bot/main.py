@@ -9,7 +9,7 @@ from datetime import datetime
 
 from scrapers.remoteok        import scrape_remoteok
 from scrapers.remotive        import scrape_remotive
-from scrapers.arbeitnow       import scrape_arbeitnow
+"from scrapers.arbeitnow       import scrape_arbeitnow"
 from scrapers.themuse         import scrape_themuse
 from scrapers.weworkremotely  import scrape_weworkremotely
 from scrapers.workingnomads   import scrape_workingnomads
