@@ -130,7 +130,7 @@ def run():
         # Global Remote (API-based, most reliable)
         ("RemoteOK",         scrape_remoteok),
         ("Remotive",         scrape_remotive),
-        ("Arbeitnow",        scrape_arbeitnow),
+        "(Arbeitnow,        scrape_arbeitnow)",
         ("TheMuse",          scrape_themuse),
         ("WeWorkRemotely",   scrape_weworkremotely),
         ("WorkingNomads",    scrape_workingnomads),
