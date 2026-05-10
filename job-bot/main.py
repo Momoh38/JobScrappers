@@ -7,29 +7,32 @@ import os
 from datetime import datetime
 
 # --- Global Remote (API-based, most reliable) ---
-from scrapers.remoteok        import scrape_remoteok
-from scrapers.remotive        import scrape_remotive
-from scrapers.themuse         import scrape_themuse
-from scrapers.weworkremotely  import scrape_weworkremotely
-from scrapers.workingnomads   import scrape_workingnomads
-from scrapers.braintrust      import scrape_braintrust
-from scrapers.virtustant      import scrape_virtustant
-from scrapers.linkedin_rss    import scrape_linkedin_rss
+#from scrapers.remoteok        import scrape_remoteok
+#from scrapers.remotive        import scrape_remotive
+#from scrapers.themuse         import scrape_themuse
+#from scrapers.weworkremotely  import scrape_weworkremotely
+#from scrapers.workingnomads   import scrape_workingnomads
+#from scrapers.braintrust      import scrape_braintrust
+#from scrapers.virtustant      import scrape_virtustant
+#from scrapers.linkedin_rss    import scrape_linkedin_rss
 from scrapers.jobicy          import scrape_jobicy       # replaces DailyRemote (403)
-from scrapers.himalayas       import scrape_himalayas    # new free API
+#from scrapers.himalayas       import scrape_himalayas    # new free API
 
 # --- Nigeria-specific ---
-from scrapers.jobberman       import scrape_jobberman
-from scrapers.myjobmag        import scrape_myjobmag
-from scrapers.ngcareers       import scrape_ngcareers
-from scrapers.jobgurus        import scrape_jobgurus
+#from scrapers.jobberman       import scrape_jobberman
+#from scrapers.myjobmag        import scrape_myjobmag
+#from scrapers.ngcareers       import scrape_ngcareers
+#from scrapers.jobgurus        import scrape_jobgurus
 
 # --- International / NGO / Africa ---
-from scrapers.ngo_jobs        import scrape_ngo_jobs
-from scrapers.africa_jobs     import scrape_africa_jobs
+#from scrapers.ngo_jobs        import scrape_ngo_jobs
+#from scrapers.africa_jobs     import scrape_africa_jobs
 
 # --- Social Media ---
-from scrapers.telegram_channels import scrape_telegram_channels
+#from scrapers.telegram_channels import scrape_telegram_channels
+
+
+
 
 # --- Suspended (kept for reference, do not import) ---
 # from scrapers.indeed_ng     import scrape_indeed_ng    (403 Forbidden)
