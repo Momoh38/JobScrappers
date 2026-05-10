@@ -6,17 +6,20 @@ import json
 import os
 from datetime import datetime
 
+#----Another filter updating for better
+#from scrapers.weworkremotely  import scrape_weworkremotely
+
+
 # --- Global Remote (API-based, most reliable) ---
 #from scrapers.remoteok        import scrape_remoteok
 #from scrapers.remotive        import scrape_remotive
 #from scrapers.themuse         import scrape_themuse
-from scrapers.weworkremotely  import scrape_weworkremotely
 #from scrapers.workingnomads   import scrape_workingnomads
 #from scrapers.braintrust      import scrape_braintrust
 #from scrapers.virtustant      import scrape_virtustant
 #from scrapers.linkedin_rss    import scrape_linkedin_rss
 #from scrapers.jobicy          import scrape_jobicy       # replaces DailyRemote (403) TESTING
-#from scrapers.himalayas       import scrape_himalayas    # new free API
+from scrapers.himalayas       import scrape_himalayas    # new free API
 
 # --- Nigeria-specific ---
 #from scrapers.jobberman       import scrape_jobberman
