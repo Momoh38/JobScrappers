@@ -92,31 +92,31 @@ def update_health(health: dict, name: str, success: bool) -> dict:
     return health
 
 
-def maybe_send_weekly_report(health: dict, run_stats_history: list):
-    if datetime.now().weekday() != 6:
-        return
-    last  = load_json("last_weekly_report.json", {}).get("date", "")
-    today = datetime.now().strftime("%Y-%m-%d")
-    if last == today:
-        return
+#def maybe_send_weekly_report(health: dict, run_stats_history: list):
+#    if datetime.now().weekday() != 6:
+#        return
+#    last  = load_json("last_weekly_report.json", {}).get("date", "")
+#    today = datetime.now().strftime("%Y-%m-%d")
+#    if last == today:
+#        return
 
-    from sender import _send_text
-    working = [n for n, h in health.items() if h.get("failures", 0) == 0]
-    broken  = [n for n, h in health.items() if h.get("failures", 0) >= 3]
+#    from sender import _send_text
+#    working = [n for n, h in health.items() if h.get("failures", 0) == 0]
+#    broken  = [n for n, h in health.items() if h.get("failures", 0) >= 3]
 
-    lines = [
-        "📅 *Weekly Bot Report*\n",
-        f"✅ Working scrapers: *{len(working)}*",
-        f"❌ Broken scrapers: *{len(broken)}*",
-    ]
-    if broken:
-        lines.append("Needs fixing: " + ", ".join(broken))
-    if run_stats_history:
-        total_sent = sum(r.get("sent", 0) for r in run_stats_history[-168:])
-        lines.append(f"\n📨 Jobs sent this week: *{total_sent}*")
+#    lines = [
+#        "📅 *Weekly Bot Report*\n",
+#        f"✅ Working scrapers: *{len(working)}*",
+#        f"❌ Broken scrapers: *{len(broken)}*",
+#    ]
+#    if broken:
+#        lines.append("Needs fixing: " + ", ".join(broken))
+#    if run_stats_history:
+#        total_sent = sum(r.get("sent", 0) for r in run_stats_history[-168:])
+#        lines.append(f"\n📨 Jobs sent this week: *{total_sent}*")
 
-    _send_text("\n".join(lines))
-    save_json("last_weekly_report.json", {"date": today})
+#    _send_text("\n".join(lines))
+#    save_json("last_weekly_report.json", {"date": today})
 
 
 def run():
