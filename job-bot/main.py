@@ -7,13 +7,7 @@ import os
 from datetime import datetime
 
 #----Another filter updating for better
-#from scrapers.himalayas       import scrape_himalayas    # new free API
-
-#Testing
-
-from scrapers.wfh_io            import scrape_wfh_io
-
-
+from scrapers.himalayas       import scrape_himalayas    # new free API
 
 
 # --- Global Remote (API-based, most reliable) ---
@@ -27,6 +21,7 @@ from scrapers.wfh_io            import scrape_wfh_io
 #from scrapers.jobicy          import scrape_jobicy       # replaces DailyRemote (403) TESTING
 #from scrapers.weworkremotely  import scrape_weworkremotely
 #from scrapers.we_work_remotely_enhanced import scrape_wwr_enhanced
+#from scrapers.wfh_io            import scrape_wfh_io
 
 # --- Nigeria-specific ---
 #from scrapers.jobberman       import scrape_jobberman
@@ -137,17 +132,17 @@ def run():
         #Testing
         
         
-        ("WFH.io",             scrape_wfh_io),            # Work from home jobs
         
         #Wrking Update
         #("WeWorkRemotely", scrape_weworkremotely),
-        #("Himalayas",      scrape_himalayas),
+        ("Himalayas",      scrape_himalayas),
         
         # Global Remote
         #("RemoteOK",       scrape_remoteok),
         #("Remotive",       scrape_remotive),
         #("TheMuse",        scrape_themuse),
-       #("WeWorkRemotely+",    scrape_wwr_enhanced),      # Enhanced WWR with salary
+        #("WeWorkRemotely+",    scrape_wwr_enhanced),      # Enhanced WWR with salary
+        #("WFH.io",             scrape_wfh_io),            # Work from home jobs
         
         #("WorkingNomads",  scrape_workingnomads),
         #("Braintrust",     scrape_braintrust),
