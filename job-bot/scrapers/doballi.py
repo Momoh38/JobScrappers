@@ -1,6 +1,15 @@
 """
 scrapers/doballi.py — Scrapes Doballi (Africa-focused job platform)
+
+scrapers/doballi.py — SUSPENDED
+Doballi returns 401 Unauthorized — site now requires login to view jobs.
+Kept here for future re-activation if they open a public API.
 """
+
+
+def scrape_doballi() -> list:
+    print("     ℹ️ Doballi suspended (401 Unauthorized — requires login)")
+    return []
 
 import requests
 import hashlib
