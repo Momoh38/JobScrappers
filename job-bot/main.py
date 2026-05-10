@@ -12,8 +12,7 @@ from datetime import datetime
 
 #Testing
 
-#from scrapers.we_work_remotely_enhanced import scrape_wwr_enhanced
-from scrapers.europeremote      import scrape_europeremote
+from scrapers.we_work_remotely_enhanced import scrape_wwr_enhanced
 #from scrapers.remoters          import scrape_remoters
 #from scrapers.wfh_io            import scrape_wfh_io
 
@@ -60,6 +59,7 @@ from scrapers.europeremote      import scrape_europeremote
 #from scrapers.doballi         import scrape_doballi
 #from scrapers.pangaea           import scrape_pangaea
 #from scrapers.relocate_me       import scrape_relocate_me
+#from scrapers.europeremote      import scrape_europeremote
 
 from filter import is_halal
 from sender import send_job, send_stats, send_health_alert
@@ -136,8 +136,8 @@ def run():
     scrapers = [
         #Testing
         
-       # ("WeWorkRemotely+",    scrape_wwr_enhanced),      # Enhanced WWR with salary
-        ("EuropeRemote",       scrape_europeremote),      # Europe timezone (good for Nigeria)
+        ("WeWorkRemotely+",    scrape_wwr_enhanced),      # Enhanced WWR with salary
+        
         #("Remoters",           scrape_remoters),          # Worldwide remote curated
         #("WFH.io",             scrape_wfh_io),            # Work from home jobs
         
@@ -174,6 +174,7 @@ def run():
         #SUSPENDED
         #("Pangaea",            scrape_pangaea),           # Global remote jobs
         #("RelocateMe",         scrape_relocate_me),       # Visa sponsorship jobs
+        #("EuropeRemote",       scrape_europeremote),      # Europe timezone (good for Nigeria)
 
     ]
 
