@@ -13,13 +13,13 @@ TELEGRAM_JOB_CHANNELS = [
     # Nigerian job channels (verified active)
     "jbtoday",                        # Jobstoday - Nigerian + international remote jobs
     "jobnownigeria",                   # Jobnow Nigeria - verified daily vacancies
-    "careermattersng",                 # Careermatters NG - active recruitment platform
     "jobnetworkng",                    # Latest Jobs in Nigeria
     "JobsinNigeriadaily",              # Jobs in Nigeria Daily
     "jobsnigeria001rekrutconsulting",  # Job Vacancies Nigeria
-    "WorkaNigeria",                    # Worka Nigeria - Web2 & Web3 jobs
-    "illtip",
-    
+    "illtip",                          # Job vacancies in nigeria  
+    #"WorkaNigeria",                    # Worka Nigeria - Web2 & Web3 jobs
+    #"careermattersng",                  Careermatters NG - active recruitment platform (NOT ACTIVE)
+  
     # Remote/worldwide job channels
     "remotejobss",                     # Remote Jobs (English & Worldwide)
 ]
