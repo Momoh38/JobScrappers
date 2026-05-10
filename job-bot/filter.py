@@ -274,3 +274,113 @@ def is_halal(job: dict) -> bool:
     job["_priority"] = is_priority(job)
 
     return True
+
+def is_halal(job):
+    """
+    Main filtering function - returns True if job should be sent
+    """
+    
+    # Get job text content to check
+    title = job.get('title', '')
+    description = job.get('description', '')
+    company = job.get('company', '')
+    tags = job.get('tags', '')
+    
+    # Combine all text for language detection
+    all_text = f"{title} {description} {company} {tags}".lower()
+    
+    # ========== NEW: ENGLISH LANGUAGE FILTER ==========
+    if not is_english_job(all_text):
+        print(f"     🚫 Filtered (non-English): {title[:50]}...")
+        return False
+    # ==================================================
+    
+    # Your existing filters below...
+    # (haram filter, location filter, etc.)
+    
+    return True
+
+
+def is_english_job(text):
+    """
+    Detect if job posting is primarily in English
+    Returns True for English, False for foreign languages
+    """
+    if not text:
+        return True  # Empty text assume English
+    
+    # Common English words that appear in most job postings
+    english_indicators = [
+        'the', 'and', 'for', 'you', 'will', 'work', 'job', 'role',
+        'position', 'team', 'company', 'remote', 'experience', 'skills',
+        'required', 'responsibilities', 'qualifications', 'benefits',
+        'salary', 'full-time', 'part-time', 'contract', 'freelance'
+    ]
+    
+    # Common foreign language indicators (block these)
+    foreign_indicators = {
+        'german': ['german', 'deutsch', 'fließend', 'muttersprache', 'sprache', 'deutsche'],
+        'french': ['french', 'français', 'parlez', 'bilingue', 'francophone', 'langue'],
+        'spanish': ['spanish', 'español', 'idioma', 'bilingüe', 'castellano'],
+        'portuguese': ['portuguese', 'português', 'idioma', 'brasil'],
+        'dutch': ['dutch', 'nederlands', 'vloeiend', 'taal'],
+        'italian': ['italian', 'italiano', 'lingua', 'madrelingua'],
+        'chinese': ['chinese', 'mandarin', '普通话', '中文', '汉语'],
+        'japanese': ['japanese', '日本語', 'nihongo', 'japonaise'],
+        'korean': ['korean', '한국어', 'hangul'],
+        'russian': ['russian', 'русский', 'russkiy'],
+        'arabic': ['arabic', 'العربية', 'arabe', 'arabisch'],
+        'hindi': ['hindi', 'हिन्दी'],
+        'swedish': ['swedish', 'svenska', 'skandinavisk'],
+        'polish': ['polish', 'polski', 'język'],
+        'turkish': ['turkish', 'türkçe', 'dili'],
+    }
+    
+    text_lower = text.lower()
+    
+    # Count English words present
+    english_count = sum(1 for word in english_indicators if word in text_lower)
+    
+    # Check for foreign language indicators (if found, likely non-English)
+    for language, indicators in foreign_indicators.items():
+        for indicator in indicators:
+            if indicator in text_lower:
+                # Check if the job REQUIRES this foreign language
+                if any(phrase in text_lower for phrase in [
+                    f'{indicator} required', f'{indicator} speaking', 
+                    f'fluent in {indicator}', f'{indicator} language',
+                    'native ' + indicator
+                ]):
+                    return False
+    
+    # If very few English words, likely non-English
+    if english_count < 3 and len(text.split()) > 20:
+        return False
+    
+    return True
+
+
+def contains_foreign_language_requirement(text):
+    """
+    Specifically check for requirements to speak foreign languages
+    More aggressive filtering for jobs requiring non-English
+    """
+    text_lower = text.lower()
+    
+    # Patterns that indicate foreign language requirement
+    foreign_patterns = [
+        r'(?:fluent|proficient|native|business)\s+(?:in|level)\s+(?:german|french|spanish|mandarin|japanese|dutch|italian)',
+        r'(?:german|french|spanish|dutch|italian|mandarin|japanese)\s+(?:required|mandatory|essential|must)',
+        r'(?:speak|write|communicate)\s+(?:fluent|flowing)\s+(?:german|french|spanish)',
+        r'language\s+requirement\s*:\s*(?:german|french|spanish)',
+        r'bring\s+your\s+(?:german|french|spanish)',
+        r'deutschkenntnisse',  # German
+        r'français\s+obligatoire',  # French
+        r'español\s+(?:requerido|necesario)',  # Spanish
+    ]
+    
+    for pattern in foreign_patterns:
+        if re.search(pattern, text_lower):
+            return True
+    
+    return False
