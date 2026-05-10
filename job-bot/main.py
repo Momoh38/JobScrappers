@@ -237,12 +237,12 @@ def run():
     #    send_stats(stats)
 
     # Weekly report on Sundays
-    maybe_send_weekly_report(health, history)
+    #maybe_send_weekly_report(health, history)
 
-    print(f"\n✅ Done!")
-    print(f"   📨 Sent:         {new_count}")
-    print(f"   🚫 Filtered:     {skipped_filter}")
-    print(f"   👁️  Already seen: {skipped_seen}")
+    #print(f"\n✅ Done!")
+    #print(f"   📨 Sent:         {new_count}")
+    #print(f"   🚫 Filtered:     {skipped_filter}")
+    #print(f"   👁️  Already seen: {skipped_seen}")
 
 
 if __name__ == "__main__":
