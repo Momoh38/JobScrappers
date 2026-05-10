@@ -23,7 +23,6 @@ from scrapers.jobberman       import scrape_jobberman
 from scrapers.myjobmag        import scrape_myjobmag
 from scrapers.ngcareers       import scrape_ngcareers
 from scrapers.jobgurus        import scrape_jobgurus
-from scrapers.doballi         import scrape_doballi
 
 # --- International / NGO / Africa ---
 from scrapers.ngo_jobs        import scrape_ngo_jobs
@@ -43,6 +42,7 @@ from scrapers.telegram_channels import scrape_telegram_channels
 # from scrapers.dynamitejobs  import scrape_dynamitejobs (abroad-focused)
 # from scrapers.freelance     import scrape_freelance    (optional freelance)
 # from scrapers.arbeitnow     import scrape_arbeitnow    (Germany-focused)
+#from scrapers.doballi         import scrape_doballi
 
 from filter import is_halal
 from sender import send_job, send_stats, send_health_alert
@@ -133,12 +133,13 @@ def run():
         ("MyJobMag",       scrape_myjobmag),
         ("NGCareers",      scrape_ngcareers),
         ("JobGurus",       scrape_jobgurus),
-        ("Doballi",        scrape_doballi),
         # International / NGO / Africa
         ("NGO / UN Jobs",  scrape_ngo_jobs),
         ("Africa Jobs",    scrape_africa_jobs),
         # Social Media
         ("Telegram",       scrape_telegram_channels),
+        #("Doballi",        scrape_doballi),
+        
     ]
 
     all_jobs      = []
