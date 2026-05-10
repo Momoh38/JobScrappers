@@ -11,12 +11,11 @@ from datetime import datetime
 #from scrapers.himalayas       import scrape_himalayas    # new free API
 
 #Testing
-#from scrapers.relocate_me       import scrape_relocate_me
+from scrapers.relocate_me       import scrape_relocate_me
 #from scrapers.we_work_remotely_enhanced import scrape_wwr_enhanced
 #from scrapers.europeremote      import scrape_europeremote
 #from scrapers.remoters          import scrape_remoters
 #from scrapers.wfh_io            import scrape_wfh_io
-from scrapers.pangaea           import scrape_pangaea
 
 
 
@@ -59,6 +58,8 @@ from scrapers.pangaea           import scrape_pangaea
 # from scrapers.freelance     import scrape_freelance    (optional freelance)
 # from scrapers.arbeitnow     import scrape_arbeitnow    (Germany-focused)
 #from scrapers.doballi         import scrape_doballi
+#from scrapers.pangaea           import scrape_pangaea
+
 
 from filter import is_halal
 from sender import send_job, send_stats, send_health_alert
@@ -134,13 +135,12 @@ def run():
 
     scrapers = [
         #Testing
-        #("RelocateMe",         scrape_relocate_me),       # Visa sponsorship jobs
+        ("RelocateMe",         scrape_relocate_me),       # Visa sponsorship jobs
        # ("WeWorkRemotely+",    scrape_wwr_enhanced),      # Enhanced WWR with salary
         #("EuropeRemote",       scrape_europeremote),      # Europe timezone (good for Nigeria)
         #("Remoters",           scrape_remoters),          # Worldwide remote curated
         #("WFH.io",             scrape_wfh_io),            # Work from home jobs
-        ("Pangaea",            scrape_pangaea),           # Global remote jobs
-
+        
         #Wrking Update
         #("WeWorkRemotely", scrape_weworkremotely),
         #("Himalayas",      scrape_himalayas),
@@ -166,10 +166,14 @@ def run():
         # International / NGO / Africa
         #("NGO / UN Jobs",  scrape_ngo_jobs),
         #("Africa Jobs",    scrape_africa_jobs),
+        
         # Social Media
         #("Telegram",       scrape_telegram_channels),
         #("Doballi",        scrape_doballi),
-        
+
+        #SUSPENDED
+        #("Pangaea",            scrape_pangaea),           # Global remote jobs
+
     ]
 
     all_jobs      = []
