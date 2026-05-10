@@ -27,7 +27,6 @@ from scrapers.workingnomads   import scrape_workingnomads
 from scrapers.remotive        import scrape_remotive #Good but Paid Subs to see more oppourtunities
 from scrapers.themuse         import scrape_themuse
 from scrapers.weworkremotely  import scrape_weworkremotely
-from scrapers.linkedin_rss    import scrape_linkedin_rss
 
 
 #Suspended To Scrape from
@@ -39,6 +38,7 @@ from scrapers.linkedin_rss    import scrape_linkedin_rss
 #from scrapers.dynamitejobs    import scrape_dynamitejobs (For Abroad)
 #from scrapers.freelance       import scrape_freelance
 #from scrapers.arbeitnow       import scrape_arbeitnow
+#from scrapers.linkedin_rss    import scrape_linkedin_rss
 
 from filter import is_halal
 from sender import send_job, send_stats, send_health_alert
@@ -156,7 +156,7 @@ def run():
         ("Remotive",         scrape_remotive),
         ("TheMuse",          scrape_themuse),
         ("WeWorkRemotely",   scrape_weworkremotely),
-        ("LinkedIn RSS",     scrape_linkedin_rss),
+        
     
         # Social Media
         ("Telegram",         scrape_telegram_channels),
@@ -170,7 +170,7 @@ def run():
         #("StartupJobs",      scrape_startupjobs),
         #("OneForma",         scrape_oneforma),
         #("Freelance",        scrape_freelance),
-        
+        #("LinkedIn RSS",     scrape_linkedin_rss),
     ]
 
     all_jobs      = []
