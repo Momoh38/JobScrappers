@@ -7,13 +7,11 @@ import os
 from datetime import datetime
 
 #----Another filter updating for better
-#from scrapers.weworkremotely  import scrape_weworkremotely
 #from scrapers.himalayas       import scrape_himalayas    # new free API
 
 #Testing
 
-from scrapers.we_work_remotely_enhanced import scrape_wwr_enhanced
-#from scrapers.remoters          import scrape_remoters
+from scrapers.remoters          import scrape_remoters
 #from scrapers.wfh_io            import scrape_wfh_io
 
 
@@ -28,6 +26,8 @@ from scrapers.we_work_remotely_enhanced import scrape_wwr_enhanced
 #from scrapers.virtustant      import scrape_virtustant
 #from scrapers.linkedin_rss    import scrape_linkedin_rss
 #from scrapers.jobicy          import scrape_jobicy       # replaces DailyRemote (403) TESTING
+#from scrapers.weworkremotely  import scrape_weworkremotely
+#from scrapers.we_work_remotely_enhanced import scrape_wwr_enhanced
 
 # --- Nigeria-specific ---
 #from scrapers.jobberman       import scrape_jobberman
@@ -136,9 +136,8 @@ def run():
     scrapers = [
         #Testing
         
-        ("WeWorkRemotely+",    scrape_wwr_enhanced),      # Enhanced WWR with salary
         
-        #("Remoters",           scrape_remoters),          # Worldwide remote curated
+        ("Remoters",           scrape_remoters),          # Worldwide remote curated
         #("WFH.io",             scrape_wfh_io),            # Work from home jobs
         
         #Wrking Update
@@ -149,7 +148,8 @@ def run():
         #("RemoteOK",       scrape_remoteok),
         #("Remotive",       scrape_remotive),
         #("TheMuse",        scrape_themuse),
-       
+       #("WeWorkRemotely+",    scrape_wwr_enhanced),      # Enhanced WWR with salary
+        
         #("WorkingNomads",  scrape_workingnomads),
         #("Braintrust",     scrape_braintrust),
         #("Virtustant",     scrape_virtustant),
