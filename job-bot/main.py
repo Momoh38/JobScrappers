@@ -8,6 +8,7 @@ from datetime import datetime
 
 #----Another filter updating for better
 #from scrapers.weworkremotely  import scrape_weworkremotely
+#from scrapers.himalayas       import scrape_himalayas    # new free API
 
 
 # --- Global Remote (API-based, most reliable) ---
@@ -19,7 +20,6 @@ from datetime import datetime
 #from scrapers.virtustant      import scrape_virtustant
 #from scrapers.linkedin_rss    import scrape_linkedin_rss
 #from scrapers.jobicy          import scrape_jobicy       # replaces DailyRemote (403) TESTING
-from scrapers.himalayas       import scrape_himalayas    # new free API
 
 # --- Nigeria-specific ---
 #from scrapers.jobberman       import scrape_jobberman
@@ -125,6 +125,7 @@ def run():
     scrapers = [
         #Wrking Update
         #("WeWorkRemotely", scrape_weworkremotely),
+        #("Himalayas",      scrape_himalayas),
         
         # Global Remote
         #("RemoteOK",       scrape_remoteok),
@@ -136,7 +137,7 @@ def run():
         #("Virtustant",     scrape_virtustant),
         #("LinkedIn RSS",   scrape_linkedin_rss),
         #("Jobicy",         scrape_jobicy),
-        ("Himalayas",      scrape_himalayas),
+        
         # Nigeria-specific
         #("Jobberman",      scrape_jobberman),
         #("MyJobMag",       scrape_myjobmag),
