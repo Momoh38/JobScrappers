@@ -1,6 +1,5 @@
 """
-scrapers/weworkremotely.py — WeWorkRemotely using correct RSS feed URLs
-All URLs verified from weworkremotely.com/remote-job-rss-feed
+scrapers/weworkremotely.py — WeWorkRemotely with Nigeria-friendly filtering
 """
 
 import requests
@@ -16,8 +15,9 @@ WWR_FEEDS = [
     ("Management",        "https://weworkremotely.com/categories/remote-management-and-finance-jobs.rss"),
     ("DevOps",            "https://weworkremotely.com/categories/remote-devops-sysadmin-jobs.rss"),
     ("All Remote",        "https://weworkremotely.com/remote-jobs.rss"),
+    ("Copywriting",       "https://weworkremotely.com/categories/remote-writing-jobs.rss"),
+    ("HR & Recruiting",   "https://weworkremotely.com/categories/remote-hr-jobs.rss"),
 ]
-
 
 def scrape_weworkremotely() -> list:
     jobs = []
@@ -57,6 +57,10 @@ def scrape_weworkremotely() -> list:
                 desc = re.sub(r"<[^>]+>", " ", desc or "")
                 desc = re.sub(r"\s+", " ", desc).strip()
 
+                # Check Nigeria-friendliness
+                if not is_nigeria_friendly_wwr(desc, region, role):
+                    continue
+
                 if not role or len(role) < 3:
                     continue
 
@@ -66,11 +70,12 @@ def scrape_weworkremotely() -> list:
                     "title":       role.strip(),
                     "company":     company.strip(),
                     "location":    region or "Remote (Worldwide)",
-                    "salary":      "",
-                    "description": desc[:400],
-                    "tags":        category,
+                    "salary":      extract_salary_wwr(desc),
+                    "description": desc[:500],
+                    "tags":        f"{category}, Remote, Worldwide",
                     "url":         link,
                     "source":      "WeWorkRemotely",
+                    "suitable_for_nigeria": "Yes" if "worldwide" in region.lower() or not region else "Check hours",
                 })
 
         except Exception as e:
@@ -83,3 +88,41 @@ def scrape_weworkremotely() -> list:
             seen.add(j["id"])
             unique.append(j)
     return unique
+
+def is_nigeria_friendly_wwr(description, region, title):
+    """Filter for Nigeria-friendly remote jobs"""
+    text = (description + " " + title).lower()
+    region_lower = region.lower()
+    
+    # Exclude clearly non-friendly
+    exclude = ["us only", "usa only", "uk only", "europe only", "must be us citizen"]
+    for word in exclude:
+        if word in text or word in region_lower:
+            return False
+    
+    # Include worldwide or any remote
+    include = ["worldwide", "global", "anywhere", "remote", "any location", "all countries"]
+    for word in include:
+        if word in text or word in region_lower:
+            return True
+    
+    # Default to include remote jobs
+    return "remote" in text
+
+def extract_salary_wwr(description):
+    """Try to extract salary from description"""
+    patterns = [
+        r'\$(\d+(?:,\d{3})*(?:\.\d+)?)\s*-\s*\$(\d+(?:,\d{3})*(?:\.\d+)?)',
+        r'\$(\d+(?:,\d{3})*(?:\.\d+)?)\s*to\s*\$(\d+(?:,\d{3})*(?:\.\d+)?)',
+        r'\$(\d+(?:,\d{3})*(?:\.\d+)?)\s*\+\s*',
+        r'(\d+(?:,\d{3})*(?:\.\d+)?)\s*USD',
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, description, re.IGNORECASE)
+        if match:
+            if len(match.groups()) >= 2:
+                return f"${match.group(1)}-${match.group(2)} USD"
+            elif match.group(1):
+                return f"${match.group(1)}+ USD"
+    return "Check listing"
