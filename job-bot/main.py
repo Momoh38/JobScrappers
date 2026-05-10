@@ -121,26 +121,28 @@ def run():
 
     scrapers = [
         # Global Remote
-        ("RemoteOK",       scrape_remoteok),
-        ("Remotive",       scrape_remotive),
-        ("TheMuse",        scrape_themuse),
-        ("WeWorkRemotely", scrape_weworkremotely),
-        ("WorkingNomads",  scrape_workingnomads),
-        ("Braintrust",     scrape_braintrust),
-        ("Virtustant",     scrape_virtustant),
-        ("LinkedIn RSS",   scrape_linkedin_rss),
+        #("RemoteOK",       scrape_remoteok),
+        #("Remotive",       scrape_remotive),
+        #("TheMuse",        scrape_themuse),
+        #("WeWorkRemotely", scrape_weworkremotely),
+        #("WorkingNomads",  scrape_workingnomads),
+        #("Braintrust",     scrape_braintrust),
+        #("Virtustant",     scrape_virtustant),
+        #("LinkedIn RSS",   scrape_linkedin_rss),
         ("Jobicy",         scrape_jobicy),
-        ("Himalayas",      scrape_himalayas),
+        #("Himalayas",      scrape_himalayas),
         # Nigeria-specific
-        ("Jobberman",      scrape_jobberman),
-        ("MyJobMag",       scrape_myjobmag),
-        ("NGCareers",      scrape_ngcareers),
-        ("JobGurus",       scrape_jobgurus),
+        #("Jobberman",      scrape_jobberman),
+        #("MyJobMag",       scrape_myjobmag),
+        #("NGCareers",      scrape_ngcareers),
+        #("JobGurus",       scrape_jobgurus),
+        
+        
         # International / NGO / Africa
-        ("NGO / UN Jobs",  scrape_ngo_jobs),
-        ("Africa Jobs",    scrape_africa_jobs),
+        #("NGO / UN Jobs",  scrape_ngo_jobs),
+        #("Africa Jobs",    scrape_africa_jobs),
         # Social Media
-        ("Telegram",       scrape_telegram_channels),
+        #("Telegram",       scrape_telegram_channels),
         #("Doballi",        scrape_doballi),
         
     ]
