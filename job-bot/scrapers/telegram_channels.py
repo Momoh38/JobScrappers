@@ -17,9 +17,12 @@ TELEGRAM_JOB_CHANNELS = [
     "JobsinNigeriadaily",              # Jobs in Nigeria Daily
     "jobsnigeria001rekrutconsulting",  # Job Vacancies Nigeria
     "illtip",                          # Job vacancies in nigeria  
+    "techjobsworld",           # Lagos tech jobs
+    "EllfexNaijaJobber"        # General Nigeria jobs
+    "naijajobsportal",           
+    
     #"WorkaNigeria",                    # Worka Nigeria - Web2 & Web3 jobs
     #"careermattersng",                  Careermatters NG - active recruitment platform (NOT ACTIVE)
-  
     # Remote/worldwide job channels
     "remotejobss",                     # Remote Jobs (English & Worldwide)
 ]
