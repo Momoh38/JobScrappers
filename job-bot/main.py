@@ -10,7 +10,13 @@ from datetime import datetime
 #from scrapers.weworkremotely  import scrape_weworkremotely
 #from scrapers.himalayas       import scrape_himalayas    # new free API
 
-
+#Testing
+from scrapers.relocate_me       import scrape_relocate_me
+from scrapers.we_work_remotely_enhanced import scrape_wwr_enhanced
+from scrapers.europeremote      import scrape_europeremote
+from scrapers.remoters          import scrape_remoters
+from scrapers.wfh_io            import scrape_wfh_io
+from scrapers.pangaea           import scrape_pangaea
 # --- Global Remote (API-based, most reliable) ---
 #from scrapers.remoteok        import scrape_remoteok
 #from scrapers.remotive        import scrape_remotive
