@@ -123,17 +123,20 @@ def run():
     print(f"📦 Already seen: {len(seen_jobs)} jobs\n")
 
     scrapers = [
+        #Wrking Update
+        #("WeWorkRemotely", scrape_weworkremotely),
+        
         # Global Remote
         #("RemoteOK",       scrape_remoteok),
         #("Remotive",       scrape_remotive),
         #("TheMuse",        scrape_themuse),
-        ("WeWorkRemotely", scrape_weworkremotely),
+       
         #("WorkingNomads",  scrape_workingnomads),
         #("Braintrust",     scrape_braintrust),
         #("Virtustant",     scrape_virtustant),
         #("LinkedIn RSS",   scrape_linkedin_rss),
         #("Jobicy",         scrape_jobicy),
-        #("Himalayas",      scrape_himalayas),
+        ("Himalayas",      scrape_himalayas),
         # Nigeria-specific
         #("Jobberman",      scrape_jobberman),
         #("MyJobMag",       scrape_myjobmag),
