@@ -1,68 +1,66 @@
 """
-scrapers/remoters.py — Remoters.net remote jobs (free, no API key)
-Curated worldwide remote jobs with good Nigeria-friendly timezones
+scrapers/remoters.py — Remoters.net with SSL workaround
 """
 
 import requests
 import hashlib
 import re
 from bs4 import BeautifulSoup
+import urllib3
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def scrape_remoters() -> list:
     """
-    Scrapes Remoters.net for worldwide remote jobs
-    Good for: Remote-first companies, flexible timezones
+    Scrapes Remoters.net with SSL workaround
     """
     jobs = []
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-    }
+    session = requests.Session()
+    session.verify = False
+    session.headers.update({
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    })
     
     try:
-        # Remoters job listings page
-        url = "https://remoters.net/jobs/"
-        response = requests.get(url, headers=headers, timeout=15)
+        # Try HTTP first
+        url = "http://remoters.net/jobs/"
+        response = session.get(url, timeout=20)
         
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')
             
-            # Find job listings (adjust selectors based on actual HTML)
-            job_cards = soup.find_all('div', class_=re.compile('job|listing|card'))
+            # Find job listings
+            job_cards = soup.find_all('div', class_=re.compile('job|post|listing')) or \
+                       soup.find_all('article') or \
+                       soup.find_all('li', class_=re.compile('job'))
             
-            for card in job_cards[:30]:  # Limit to 30 jobs
-                # Extract job details (update selectors as needed)
-                title_elem = card.find('h2') or card.find('h3') or card.find(class_=re.compile('title'))
-                company_elem = card.find(class_=re.compile('company'))
-                link_elem = card.find('a', href=True)
+            for card in job_cards[:30]:
+                # Extract title
+                title_elem = card.find(['h1', 'h2', 'h3']) or card.find(class_=re.compile('title'))
+                title = title_elem.get_text(strip=True) if title_elem else ""
                 
-                if not title_elem or not link_elem:
+                if not title:
                     continue
                 
-                title = title_elem.get_text(strip=True)
-                company = company_elem.get_text(strip=True) if company_elem else "Remote Company"
-                job_url = link_elem['href']
-                if not job_url.startswith('http'):
-                    job_url = f"https://remoters.net{job_url}"
+                # Extract link
+                link_elem = card.find('a', href=True)
+                job_url = link_elem['href'] if link_elem else ""
+                if job_url and not job_url.startswith('http'):
+                    job_url = f"http://remoters.net{job_url}"
                 
-                # Extract location (usually remote/worldwide)
+                # Extract company
+                company_elem = card.find(class_=re.compile('company'))
+                company = company_elem.get_text(strip=True) if company_elem else "Remote Company"
+                
+                # Extract location
                 location_elem = card.find(class_=re.compile('location'))
                 location = location_elem.get_text(strip=True) if location_elem else "Worldwide Remote"
                 
-                # Extract salary if present
-                salary_elem = card.find(class_=re.compile('salary'))
-                salary = salary_elem.get_text(strip=True) if salary_elem else "Competitive"
-                
-                # Get description snippet
-                desc_elem = card.find(class_=re.compile('description|excerpt'))
+                # Extract description
+                desc_elem = card.find(class_=re.compile('description')) or card.find('p')
                 description = desc_elem.get_text(strip=True)[:400] if desc_elem else "Remote position"
-                
-                # Extract tags/skills
-                tags_elem = card.find(class_=re.compile('tags|skills'))
-                tags = tags_elem.get_text(strip=True) if tags_elem else "Remote, Worldwide"
-                
-                # Nigeria-friendly check
-                if not is_remoters_nigeria_friendly(title, description, location):
-                    continue
+                description = clean_remoters_description(description)
                 
                 job_id = hashlib.md5(f"{job_url}{title}".encode()).hexdigest()
                 
@@ -71,45 +69,32 @@ def scrape_remoters() -> list:
                     "title": title,
                     "company": company,
                     "location": location,
-                    "salary": salary,
-                    "description": clean_description(description),
-                    "tags": tags,
+                    "salary": "Check listing",
+                    "description": description,
+                    "tags": "Remote, Worldwide",
                     "url": job_url,
                     "source": "Remoters",
-                    "suitable_for_nigeria": "Yes (Worldwide Remote)",
                 })
                 
     except Exception as e:
         print(f"     ⚠️ Remoters failed: {e}")
     
-    return jobs
+    return deduplicate_remoters(jobs)
 
 
-def is_remoters_nigeria_friendly(title, description, location):
-    """Check if job is suitable for Nigerian applicants"""
-    text = (title + " " + description + " " + location).lower()
-    
-    # Exclude clearly non-friendly
-    exclude = ["us only", "usa only", "uk only", "eu only", "must be citizen"]
-    for word in exclude:
-        if word in text:
-            return False
-    
-    # Include worldwide/remote
-    include = ["worldwide", "anywhere", "global", "remote", "any location"]
-    for word in include:
-        if word in text or "remote" in location.lower():
-            return True
-    
-    return True  # Default to include
-
-
-def clean_description(text):
-    """Clean up description text"""
-    if not text:
-        return ""
-    # Remove extra whitespace
+def clean_remoters_description(text):
+    """Clean description"""
+    text = re.sub(r'<[^>]+>', ' ', text)
     text = re.sub(r'\s+', ' ', text)
-    # Remove HTML if any
-    text = re.sub(r'<[^>]+>', '', text)
     return text.strip()
+
+
+def deduplicate_remoters(jobs):
+    """Remove duplicates"""
+    seen = set()
+    unique = []
+    for job in jobs:
+        if job['url'] not in seen:
+            seen.add(job['url'])
+            unique.append(job)
+    return unique
