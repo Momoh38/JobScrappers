@@ -10,12 +10,12 @@ from datetime import datetime
 #from scrapers.remoteok        import scrape_remoteok
 #from scrapers.remotive        import scrape_remotive
 #from scrapers.themuse         import scrape_themuse
-#from scrapers.weworkremotely  import scrape_weworkremotely
+from scrapers.weworkremotely  import scrape_weworkremotely
 #from scrapers.workingnomads   import scrape_workingnomads
 #from scrapers.braintrust      import scrape_braintrust
 #from scrapers.virtustant      import scrape_virtustant
 #from scrapers.linkedin_rss    import scrape_linkedin_rss
-from scrapers.jobicy          import scrape_jobicy       # replaces DailyRemote (403) TESTING
+#from scrapers.jobicy          import scrape_jobicy       # replaces DailyRemote (403) TESTING
 #from scrapers.himalayas       import scrape_himalayas    # new free API
 
 # --- Nigeria-specific ---
@@ -124,12 +124,12 @@ def run():
         #("RemoteOK",       scrape_remoteok),
         #("Remotive",       scrape_remotive),
         #("TheMuse",        scrape_themuse),
-        #("WeWorkRemotely", scrape_weworkremotely),
+        ("WeWorkRemotely", scrape_weworkremotely),
         #("WorkingNomads",  scrape_workingnomads),
         #("Braintrust",     scrape_braintrust),
         #("Virtustant",     scrape_virtustant),
         #("LinkedIn RSS",   scrape_linkedin_rss),
-        ("Jobicy",         scrape_jobicy),
+        #("Jobicy",         scrape_jobicy),
         #("Himalayas",      scrape_himalayas),
         # Nigeria-specific
         #("Jobberman",      scrape_jobberman),
