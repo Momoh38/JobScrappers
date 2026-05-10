@@ -133,7 +133,7 @@ def run():
         
         #Wrking Update
         #("WeWorkRemotely", scrape_weworkremotely),
-        ("Himalayas",      scrape_himalayas),
+        #("Himalayas",      scrape_himalayas),
         
         # Global Remote
         #("RemoteOK",       scrape_remoteok),
