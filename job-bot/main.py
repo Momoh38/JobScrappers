@@ -15,7 +15,7 @@ from datetime import datetime
 #from scrapers.braintrust      import scrape_braintrust
 #from scrapers.virtustant      import scrape_virtustant
 #from scrapers.linkedin_rss    import scrape_linkedin_rss
-from scrapers.jobicy          import scrape_jobicy       # replaces DailyRemote (403)
+from scrapers.jobicy          import scrape_jobicy       # replaces DailyRemote (403) TESTING
 #from scrapers.himalayas       import scrape_himalayas    # new free API
 
 # --- Nigeria-specific ---
