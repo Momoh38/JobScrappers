@@ -28,8 +28,16 @@ def scrape_remotive() -> list:
                 candidate_required = j.get("candidate_required_location", "Worldwide")
 
                 # Skip if explicitly restricted to non-Nigeria regions
-                restricted = ["us only", "usa only", "north america only",
-                              "uk only", "eu only", "europe only", "australia only"]
+                restricted = ["canada only", "usa only", "north america only", "uk only",
+                              "eu only", "europe only", "germany only", "france only",
+                              "italy only", "spain only", "portugal only", "netherlands only",
+                              "belgium only", "switzerland only", "austria only", "sweden only",
+                              "norway only", "denmark only", "finland only", "ireland only",
+                              "australia only", "oceania only", "new zealand only", "south africa only",
+                              "uae only", "saudi arabia only", "qatar only", "kuwait only", "bahrain only",
+                              "oman only", "asia only", "singapore only", "malaysia only", "japan only",
+                              "south korea only", "china only", "india only", "brazil only", "south america only",
+                              "mexico only", "argentina only", "chile only", "colombia only", "peru only", "antarctica only"]
                 if any(r in candidate_required.lower() for r in restricted):
                     continue
 
