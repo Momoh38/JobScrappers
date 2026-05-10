@@ -151,7 +151,7 @@ def send_job(job: dict):
 
     # Send category header if this is the first job in this category this run
     if category not in _sent_category_headers:
-        _send_text(f"\n{category}\n{'─' * 30}")
+        _send_text(f"\n{category}\n{'─' * 23}")
         _sent_category_headers.add(category)
         time.sleep(0.5)
 
