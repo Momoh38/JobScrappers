@@ -1,56 +1,56 @@
 """
 main.py — Entry point for Halal Jobs Bot
-Coordinates all scrapers, filtering, deduplication, and Telegram delivery.
 """
 
 import json
 import os
 from datetime import datetime
 
+# --- Global Remote (API-based, most reliable) ---
 from scrapers.remoteok        import scrape_remoteok
-from scrapers.indeed_ng       import scrape_indeed_ng
+from scrapers.remotive        import scrape_remotive
+from scrapers.themuse         import scrape_themuse
+from scrapers.weworkremotely  import scrape_weworkremotely
+from scrapers.workingnomads   import scrape_workingnomads
+from scrapers.braintrust      import scrape_braintrust
+from scrapers.virtustant      import scrape_virtustant
+from scrapers.linkedin_rss    import scrape_linkedin_rss
+from scrapers.jobicy          import scrape_jobicy       # replaces DailyRemote (403)
+from scrapers.himalayas       import scrape_himalayas    # new free API
+
+# --- Nigeria-specific ---
 from scrapers.jobberman       import scrape_jobberman
 from scrapers.myjobmag        import scrape_myjobmag
 from scrapers.ngcareers       import scrape_ngcareers
-from scrapers.grabjobs        import scrape_grabjobs
-from scrapers.jooble          import scrape_jooble
-from scrapers.doballi         import scrape_doballi
 from scrapers.jobgurus        import scrape_jobgurus
-from scrapers.telegram_channels import scrape_telegram_channels
+from scrapers.doballi         import scrape_doballi
+
+# --- International / NGO / Africa ---
 from scrapers.ngo_jobs        import scrape_ngo_jobs
 from scrapers.africa_jobs     import scrape_africa_jobs
-from scrapers.twitter_jobs    import scrape_twitter_jobs
-from scrapers.virtustant      import scrape_virtustant
-from scrapers.braintrust      import scrape_braintrust
-from scrapers.dailyremote     import scrape_dailyremote
-from scrapers.workingnomads   import scrape_workingnomads
-from scrapers.remotive        import scrape_remotive #Good but Paid Subs to see more oppourtunities
-from scrapers.themuse         import scrape_themuse
-from scrapers.weworkremotely  import scrape_weworkremotely
 
+# --- Social Media ---
+from scrapers.telegram_channels import scrape_telegram_channels
 
-#Suspended To Scrape from
-################################################################################
-#from scrapers.oneforma        import scrape_oneforma (FOR DATA ANNOTATION)
-
-#REMOVED FOR NOW (YOU CAN ADD IF YOU WANT)
-#from scrapers.startupjobs     import scrape_startupjobs
-#from scrapers.dynamitejobs    import scrape_dynamitejobs (For Abroad)
-#from scrapers.freelance       import scrape_freelance
-#from scrapers.arbeitnow       import scrape_arbeitnow
-#from scrapers.linkedin_rss    import scrape_linkedin_rss
+# --- Suspended (kept for reference, do not import) ---
+# from scrapers.indeed_ng     import scrape_indeed_ng    (403 Forbidden)
+# from scrapers.grabjobs      import scrape_grabjobs     (403 Forbidden)
+# from scrapers.jooble        import scrape_jooble       (403 - needs paid API key)
+# from scrapers.dailyremote   import scrape_dailyremote  (403 Forbidden)
+# from scrapers.twitter_jobs  import scrape_twitter_jobs (Nitter fully dead)
+# from scrapers.oneforma      import scrape_oneforma     (data annotation only)
+# from scrapers.startupjobs   import scrape_startupjobs  (low Nigeria relevance)
+# from scrapers.dynamitejobs  import scrape_dynamitejobs (abroad-focused)
+# from scrapers.freelance     import scrape_freelance    (optional freelance)
+# from scrapers.arbeitnow     import scrape_arbeitnow    (Germany-focused)
 
 from filter import is_halal
 from sender import send_job, send_stats, send_health_alert
 
-SEEN_JOBS_FILE    = "seen_jobs.json"
-HEALTH_FILE       = "scraper_health.json"
-STATS_FILE        = "run_stats.json"
+SEEN_JOBS_FILE = "seen_jobs.json"
+HEALTH_FILE    = "scraper_health.json"
+STATS_FILE     = "run_stats.json"
 
-
-# ---------------------------------------------------------------------------
-# Persistence helpers
-# ---------------------------------------------------------------------------
 
 def load_json(path, default):
     if os.path.exists(path):
@@ -67,10 +67,6 @@ def save_json(path, data):
         json.dump(data, f, indent=2)
 
 
-# ---------------------------------------------------------------------------
-# Health tracking
-# ---------------------------------------------------------------------------
-
 def update_health(health: dict, name: str, success: bool) -> dict:
     if name not in health:
         health[name] = {"failures": 0, "last_success": None}
@@ -79,49 +75,37 @@ def update_health(health: dict, name: str, success: bool) -> dict:
         health[name]["last_success"] = datetime.now().isoformat()
     else:
         health[name]["failures"] += 1
-        # Alert after 3 consecutive failures
         if health[name]["failures"] == 3:
             send_health_alert(name, 3)
     return health
 
 
-# ---------------------------------------------------------------------------
-# Weekly report (sends on Sundays)
-# ---------------------------------------------------------------------------
-
 def maybe_send_weekly_report(health: dict, run_stats_history: list):
-    if datetime.now().weekday() != 6:  # 6 = Sunday
+    if datetime.now().weekday() != 6:
         return
-    # Only send once per Sunday (check last report date)
-    last = load_json("last_weekly_report.json", {}).get("date", "")
+    last  = load_json("last_weekly_report.json", {}).get("date", "")
     today = datetime.now().strftime("%Y-%m-%d")
     if last == today:
         return
 
     from sender import _send_text
-
-    lines = ["📅 *Weekly Bot Report*\n"]
-
-    # Working scrapers
     working = [n for n, h in health.items() if h.get("failures", 0) == 0]
     broken  = [n for n, h in health.items() if h.get("failures", 0) >= 3]
 
-    lines.append(f"✅ Working scrapers: *{len(working)}*")
-    lines.append(f"❌ Broken scrapers: *{len(broken)}*")
+    lines = [
+        "📅 *Weekly Bot Report*\n",
+        f"✅ Working scrapers: *{len(working)}*",
+        f"❌ Broken scrapers: *{len(broken)}*",
+    ]
     if broken:
         lines.append("Needs fixing: " + ", ".join(broken))
-
     if run_stats_history:
-        total_sent = sum(r.get("sent", 0) for r in run_stats_history[-168:])  # Last 168 runs = 1 week hourly
+        total_sent = sum(r.get("sent", 0) for r in run_stats_history[-168:])
         lines.append(f"\n📨 Jobs sent this week: *{total_sent}*")
 
     _send_text("\n".join(lines))
     save_json("last_weekly_report.json", {"date": today})
 
-
-# ---------------------------------------------------------------------------
-# Main run
-# ---------------------------------------------------------------------------
 
 def run():
     print(f"🚀 Halal Jobs Bot — {datetime.now().strftime('%d %b %Y %H:%M')} WAT")
@@ -133,44 +117,28 @@ def run():
     print(f"📦 Already seen: {len(seen_jobs)} jobs\n")
 
     scrapers = [
-        # Global Remote (API-based, most reliable)
-        
+        # Global Remote
+        ("RemoteOK",       scrape_remoteok),
+        ("Remotive",       scrape_remotive),
+        ("TheMuse",        scrape_themuse),
+        ("WeWorkRemotely", scrape_weworkremotely),
+        ("WorkingNomads",  scrape_workingnomads),
+        ("Braintrust",     scrape_braintrust),
+        ("Virtustant",     scrape_virtustant),
+        ("LinkedIn RSS",   scrape_linkedin_rss),
+        ("Jobicy",         scrape_jobicy),
+        ("Himalayas",      scrape_himalayas),
         # Nigeria-specific
-        ("Indeed Nigeria",   scrape_indeed_ng),
-        ("Jobberman",        scrape_jobberman),
-        ("MyJobMag",         scrape_myjobmag),
-        ("NGCareers",        scrape_ngcareers),
-        ("GrabJobs",         scrape_grabjobs),
-        ("Jooble Nigeria",   scrape_jooble),
-        ("Doballi",          scrape_doballi),
-        ("JobGurus",         scrape_jobgurus),
-        ("NGO / UN Jobs",    scrape_ngo_jobs),
-        ("Africa Jobs",      scrape_africa_jobs),
-        
-        #The Other Ones opened
-        ("RemoteOK",         scrape_remoteok),
-        ("Virtustant",       scrape_virtustant),
-        ("Braintrust",       scrape_braintrust),
-        ("DailyRemote",      scrape_dailyremote),
-        ("WorkingNomads",    scrape_workingnomads),
-        ("Remotive",         scrape_remotive),
-        ("TheMuse",          scrape_themuse),
-        ("WeWorkRemotely",   scrape_weworkremotely),
-        
-    
+        ("Jobberman",      scrape_jobberman),
+        ("MyJobMag",       scrape_myjobmag),
+        ("NGCareers",      scrape_ngcareers),
+        ("JobGurus",       scrape_jobgurus),
+        ("Doballi",        scrape_doballi),
+        # International / NGO / Africa
+        ("NGO / UN Jobs",  scrape_ngo_jobs),
+        ("Africa Jobs",    scrape_africa_jobs),
         # Social Media
-        ("Telegram",         scrape_telegram_channels),
-        ("X / Twitter",      scrape_twitter_jobs),
-        
-        
-        # The Other Ones Available to use
-        ###############################################################
-        #("Arbeitnow",        scrape_arbeitnow), GERMANY  RELATED
-        #("DynamiteJobs",     scrape_dynamitejobs),
-        #("StartupJobs",      scrape_startupjobs),
-        #("OneForma",         scrape_oneforma),
-        #("Freelance",        scrape_freelance),
-        #("LinkedIn RSS",     scrape_linkedin_rss),
+        ("Telegram",       scrape_telegram_channels),
     ]
 
     all_jobs      = []
@@ -179,7 +147,7 @@ def run():
     for name, scraper in scrapers:
         try:
             print(f"  📡 Scraping {name}...")
-            jobs = scraper()
+            jobs  = scraper()
             count = len(jobs)
             print(f"     ✅ Found {count} jobs")
             all_jobs.extend(jobs)
@@ -215,34 +183,30 @@ def run():
         except Exception as e:
             print(f"     ⚠️ Failed to send: {e}")
 
-    # Save state
     save_json(SEEN_JOBS_FILE, list(seen_jobs))
     save_json(HEALTH_FILE, health)
 
-    # Stats summary
     stats = {
-        "timestamp": datetime.now().isoformat(),
-        "sent":         new_count,
-        "filtered":     skipped_filter,
-        "seen":         skipped_seen,
-        "sources":      len(scrapers),
+        "timestamp":     datetime.now().isoformat(),
+        "sent":          new_count,
+        "filtered":      skipped_filter,
+        "seen":          skipped_seen,
+        "sources":       len(scrapers),
         "source_counts": source_counts,
     }
     history.append(stats)
-    save_json(STATS_FILE, history[-500:])  # Keep last 500 runs
+    save_json(STATS_FILE, history[-500:])
 
-    # Send stats to Telegram if any jobs were sent or every 6 hours
-    #current_hour = datetime.now().hour
-    #if new_count > 0 or current_hour in [7, 13, 19]:
-    #    send_stats(stats)
+    current_hour = datetime.now().hour
+    if new_count > 0 or current_hour in [7, 13, 19]:
+        send_stats(stats)
 
-    # Weekly report on Sundays
-    #maybe_send_weekly_report(health, history)
+    maybe_send_weekly_report(health, history)
 
-    #print(f"\n✅ Done!")
-    #print(f"   📨 Sent:         {new_count}")
-    #print(f"   🚫 Filtered:     {skipped_filter}")
-    #print(f"   👁️  Already seen: {skipped_seen}")
+    print(f"\n✅ Done!")
+    print(f"   📨 Sent:         {new_count}")
+    print(f"   🚫 Filtered:     {skipped_filter}")
+    print(f"   👁️  Already seen: {skipped_seen}")
 
 
 if __name__ == "__main__":
