@@ -190,6 +190,46 @@ def scrape_jobicy_fallback() -> list:
     return jobs
 
 
+def check_nigeria_friendliness(description, location, timezones, experience, schedule):
+    """Check if job is suitable for Nigerian applicants"""
+    
+    # Check location keywords
+    location_lower = location.lower()
+    description_lower = description.lower()
+    
+    # Reject clearly non-Nigeria-friendly jobs
+    forbidden_keywords = [
+        "us only", "usa only", "uk only", "europe only", "local only",
+        "must be in", "must reside in", "citizen only", "work authorization required"
+    ]
+    
+    for keyword in forbidden_keywords:
+        if keyword in description_lower or keyword in location_lower:
+            return False
+    
+    # Accept worldwide or explicitly inclusive jobs
+    inclusive_keywords = [
+        "worldwide", "anywhere", "global", "remote", "any location",
+        "all countries", "international", "open to all", "all timezones"
+    ]
+    
+    for keyword in inclusive_keywords:
+        if keyword in location_lower or keyword in description_lower:
+            return True
+    
+    # Check for junior/entry-level friendliness (good for Nigerian market)
+    junior_friendly = any(term in description_lower for term in [
+        "junior", "entry level", "graduate", "training provided", "learning opportunity"
+    ])
+    
+    # Check for flexible schedule
+    flexible = any(term in description_lower or term in schedule.lower() for term in [
+        "flexible", "async", "asynchronous", "any timezone"
+    ])
+    
+    return junior_friendly or flexible
+
+
 def is_basic_nigeria_friendly(job_dict):
     """Basic check for Nigeria-friendliness"""
     title = job_dict.get("jobTitle", job_dict.get("title", "")).lower()
@@ -212,7 +252,88 @@ def is_basic_nigeria_friendly(job_dict):
     return "remote" in title or "remote" in desc
 
 
-# Keep the helper functions from previous version (check_nigeria_friendliness, 
-# evaluate_timezone_friendliness, extract_english_level, format_salary, 
-# clean_description, get_application_tips)
-# ... (include all the helper functions from the previous response)
+def evaluate_timezone_friendliness(timezones):
+    """Evaluate how friendly the timezone requirements are for Nigeria (UTC+1)"""
+    if not timezones:
+        return "Flexible/Any Timezone"
+    
+    friendly_zones = ["GMT", "UTC", "WAT", "CAT", "EAT", "BST", "CET", "EET", "Any", "Flexible"]
+    
+    for tz in timezones:
+        if any(friendly in tz for friendly in friendly_zones):
+            return "Nigeria-Friendly (EMEA/Africa hours)"
+    
+    return "Specific Timezone - Check Requirements"
+
+
+def extract_english_level(description):
+    """Extract English proficiency requirements"""
+    desc_lower = description.lower()
+    
+    if "fluent" in desc_lower or "native" in desc_lower:
+        return "Fluent/Native"
+    elif "professional" in desc_lower or "business" in desc_lower or "advanced" in desc_lower:
+        return "Professional Working"
+    elif "intermediate" in desc_lower:
+        return "Intermediate"
+    else:
+        return "Working Knowledge (likely sufficient)"
+
+
+def format_salary(min_salary, max_salary, currency):
+    """Format salary nicely"""
+    try:
+        min_salary = float(min_salary) if min_salary else None
+        max_salary = float(max_salary) if max_salary else None
+    except (ValueError, TypeError):
+        return "Competitive/Not Specified"
+    
+    if min_salary and max_salary:
+        # Convert to thousands/millions for readability
+        if max_salary >= 1000000:
+            return f"{currency} {min_salary/1000000:.1f}M–{max_salary/1000000:.1f}M/year"
+        elif max_salary >= 100000:
+            return f"{currency} {min_salary/1000:.0f}K–{max_salary/1000:.0f}K/year"
+        else:
+            return f"{currency} {int(min_salary)}–{int(max_salary)}/year"
+    elif min_salary:
+        if min_salary >= 1000000:
+            return f"{currency} {min_salary/1000000:.1f}M+/year"
+        elif min_salary >= 100000:
+            return f"{currency} {min_salary/1000:.0f}K+/year"
+        else:
+            return f"{currency} {int(min_salary)}+/year"
+    else:
+        return "Competitive/Not Specified"
+
+
+def clean_description(description):
+    """Clean HTML tags and extra whitespace from description"""
+    if not description:
+        return ""
+    
+    # Remove HTML tags
+    clean = re.sub(r'<[^>]+>', ' ', description)
+    # Remove extra whitespace
+    clean = re.sub(r'\s+', ' ', clean)
+    # Remove common tracking text
+    clean = re.sub(r'Apply now|Click here|Read more', '', clean, flags=re.I)
+    return clean.strip()
+
+
+def get_application_tips(experience, job_type):
+    """Provide Nigeria-specific application tips"""
+    tips = []
+    
+    if "junior" in str(experience).lower() or "entry" in str(experience).lower():
+        tips.append("✓ Junior role - good for recent graduates")
+    else:
+        tips.append("✓ Highlight relevant experience in your CV")
+    
+    job_type_str = str(job_type).lower()
+    if any(term in job_type_str for term in ["contract", "freelance"]):
+        tips.append("✓ Contract/Freelance - can be good for remote work")
+    
+    tips.append("✓ Apply early as remote roles fill quickly")
+    
+    return " | ".join(tips[:3])
