@@ -4,9 +4,57 @@ Features: quality stars, priority tag, inline Apply button, category headers,
           stats summary message, health alerts.
 """
 
+# Add at the very top of sender.py
+import time
+from datetime import datetime
+
+# Rate limiting variables
+_last_message_time = 0
+MIN_MESSAGE_INTERVAL = 1.5  # 1.5 seconds between messages
+MAX_RETRIES = 3
+
+def send_with_retry(url, payload, retry_count=0):
+    """Send message with retry logic for rate limiting"""
+    global _last_message_time
+    
+    # Enforce minimum time between messages
+    current_time = time.time()
+    time_since_last = current_time - _last_message_time
+    
+    if time_since_last < MIN_MESSAGE_INTERVAL:
+        wait_time = MIN_MESSAGE_INTERVAL - time_since_last
+        time.sleep(wait_time)
+    
+    try:
+        response = requests.post(url, json=payload, timeout=10)
+        result = response.json()
+        
+        # Check for rate limit
+        if response.status_code == 429 or result.get('error_code') == 429:
+            retry_after = result.get('parameters', {}).get('retry_after', 5)
+            print(f"     ⏳ Rate limited, waiting {retry_after}s...")
+            time.sleep(retry_after + 1)
+            
+            if retry_count < MAX_RETRIES:
+                return send_with_retry(url, payload, retry_count + 1)
+            return False
+        
+        _last_message_time = time.time()
+        return result.get('ok', False)
+        
+    except Exception as e:
+        print(f"     ⚠️ Send error: {e}")
+        if retry_count < MAX_RETRIES:
+            time.sleep(5)
+            return send_with_retry(url, payload, retry_count + 1)
+        return False
+
+
+
 import os
 import requests
 import time
+
 
 BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 CHANNEL_ID = os.environ.get("TELEGRAM_CHANNEL_ID")
