@@ -1,6 +1,6 @@
 """
 main.py — Entry point for Halal Jobs Bot
-UPDATED: All job sources enabled for testing
+UPDATED: Jobicy removed (poor filtering), all other sources enabled
 """
 
 import json
@@ -16,7 +16,7 @@ from scrapers.themuse         import scrape_themuse
 from scrapers.workingnomads   import scrape_workingnomads
 from scrapers.braintrust      import scrape_braintrust
 from scrapers.virtustant      import scrape_virtustant
-from scrapers.jobicy          import scrape_jobicy
+# from scrapers.jobicy          import scrape_jobicy  # REMOVED - poor filtering, showing Chinese jobs
 from scrapers.weworkremotely  import scrape_weworkremotely
 from scrapers.we_work_remotely_enhanced import scrape_wwr_enhanced
 from scrapers.wfh_io            import scrape_wfh_io
@@ -92,24 +92,16 @@ def update_health(health: dict, name: str, success: bool) -> dict:
 
 
 def extract_external_job_links(text: str) -> list:
-    """
-    Extract actual job application links from text.
-    Filters out Telegram internal links.
-    """
-    # Pattern to find all URLs
+    """Extract actual job application links from text"""
     url_pattern = r'https?://[^\s<>"\')\]]+'
     all_links = re.findall(url_pattern, text)
     
-    # Domains to filter out (Telegram internal)
     telegram_domains = ['t.me', 'telegram.me', 'telegram.dog', 'telegra.ph']
     
     external_links = []
     
     for link in all_links:
-        # Clean up link
         link = link.rstrip('.,!?;:)]')
-        
-        # Skip Telegram internal links
         is_telegram = any(tg_domain in link.lower() for tg_domain in telegram_domains)
         
         if not is_telegram and link.startswith('http'):
@@ -130,42 +122,27 @@ def remove_links_from_text(text: str) -> str:
     """Remove all URLs from text"""
     if not text:
         return text
-    
-    # Remove URLs
     text = re.sub(r'https?://[^\s<>"\')\]]+', '', text)
-    # Clean up extra spaces
     text = re.sub(r'\s+', ' ', text)
-    text = text.strip()
-    
-    return text
+    return text.strip()
 
 
 def extract_job_description(text: str, job_links: list) -> str:
-    """
-    Extract the actual job description by removing the job links from the text.
-    If description is empty or too short, returns a placeholder.
-    """
+    """Extract job description by removing links"""
     if not text:
         return "Click the 'Apply Now' button below for more details about this position."
     
     description = text
     
-    # Remove all job links from the description
     for link in job_links:
         description = description.replace(link, '')
     
-    # Remove any URLs (in case any were missed)
     description = re.sub(r'https?://[^\s<>"\')\]]+', '', description)
-    
-    # Remove any leftover Telegram group mentions
     description = re.sub(r'@\w+', '', description)
-    
-    # Clean up excessive whitespace
     description = re.sub(r'\n\s*\n', '\n\n', description)
     description = re.sub(r' +', ' ', description)
     description = description.strip()
     
-    # Remove common prefixes
     prefixes_to_remove = [
         'Job posting:', 'Description:', 'Job description:',
         'Apply here:', 'Link:', 'URL:', 'Click here:'
@@ -174,7 +151,6 @@ def extract_job_description(text: str, job_links: list) -> str:
         if description.lower().startswith(prefix.lower()):
             description = description[len(prefix):].strip()
     
-    # If description is empty or too short, provide placeholder
     if not description or len(description) < 10:
         description = "🔗 Click the 'Apply Now' button below to view full job details and submit your application."
     
@@ -182,32 +158,24 @@ def extract_job_description(text: str, job_links: list) -> str:
 
 
 def extract_title_from_message(text: str) -> str:
-    """Extract a clean title from the message - WITHOUT any links"""
+    """Extract clean title without links"""
     if not text:
         return "Job Opportunity"
     
-    # First, remove all links from the text
     text_without_links = remove_links_from_text(text)
-    
     lines = text_without_links.split('\n')
     
-    # Look for the first meaningful line that's not a link or mention
     for line in lines[:5]:
         line = line.strip()
-        # Skip empty lines, mentions
         if line and not line.startswith('@'):
-            # Remove common prefixes
             cleaned = re.sub(r'^(URGENTLY|WE\'RE|HIRING|VACANCY|JOB|POSITION|NOW HIRING|🚨|🔥|💼)[:\s]+', '', line, flags=re.IGNORECASE)
             cleaned = re.sub(r'@\w+', '', cleaned)
             cleaned = cleaned.strip()
             
-            # Make sure it's not a URL (just in case)
             if cleaned and not cleaned.startswith('http') and len(cleaned) > 5 and len(cleaned) < 200:
-                # Check if it has meaningful words (not just symbols)
                 if re.search(r'[a-zA-Z]', cleaned):
                     return cleaned
     
-    # If no good title found, try to use the first line that contains letters
     for line in lines[:3]:
         line = line.strip()
         line_without_links = remove_links_from_text(line)
@@ -218,14 +186,12 @@ def extract_title_from_message(text: str) -> str:
 
 
 def extract_company_from_message(text: str) -> str:
-    """Extract company name from message"""
+    """Extract company name"""
     if not text:
         return "Not specified"
     
-    # Remove links first
     text = remove_links_from_text(text)
     
-    # Look for common patterns
     patterns = [
         r'(?:at|@|company:?\s+)([A-Z][a-zA-Z0-9\s&]+?)(?:\s+[Ii]n|\s+[Ll]ocated|\||$|\.|\,)',
         r'(?:hiring|recruiting)[:\s]+(?:a[n]?\s+)?(?:[A-Z][a-z]+\s+)?([A-Z][a-zA-Z0-9\s&]+?)(?:\s+is|\s+are|\n)',
@@ -237,7 +203,6 @@ def extract_company_from_message(text: str) -> str:
         if match:
             company = match.group(1).strip()
             if len(company) < 50 and len(company) > 2:
-                # Clean up any remaining special characters
                 company = re.sub(r'[^\w\s@&-]', '', company)
                 return company
     
@@ -245,33 +210,18 @@ def extract_company_from_message(text: str) -> str:
 
 
 def enhance_telegram_job(job: dict) -> dict:
-    """
-    Enhance a Telegram job by properly separating:
-    - Job description (the actual details)
-    - Application link (the URL to apply)
-    - NEVER skips jobs with valid links
-    """
-    # Get the raw message content
+    """Enhance Telegram job with proper links and description"""
     raw_text = job.get('description', '') or job.get('title', '')
-    
-    # Extract external job links (the actual application URLs)
     job_links = extract_external_job_links(raw_text)
-    
-    # Extract the actual job description (remove links)
     description = extract_job_description(raw_text, job_links)
-    
-    # Extract title and company (with links removed)
     title = extract_title_from_message(raw_text)
     company = extract_company_from_message(raw_text)
     
-    # Double-check title doesn't contain any links
     title = remove_links_from_text(title)
     
-    # If we have no title but have a link, create a generic title
     if (not title or title == "Job Opportunity" or len(title) < 3) and job_links:
         title = "New Job Opportunity"
     
-    # Enhance the job object
     enhanced_job = {
         'title': title,
         'company': company,
@@ -287,12 +237,10 @@ def enhance_telegram_job(job: dict) -> dict:
         'source_group': job.get('source_group'),
     }
     
-    # Copy any existing fields
     for key, value in job.items():
         if key not in enhanced_job and key not in ['_no_external_link']:
             enhanced_job[key] = value
     
-    # Mark if no external link found
     if not job_links:
         enhanced_job['_no_external_link'] = True
         print(f"     ⚠️ No external link found - will skip")
@@ -304,7 +252,7 @@ def enhance_telegram_job(job: dict) -> dict:
 
 
 def enhanced_scrape_telegram():
-    """Wrapper for telegram scraper with link extraction"""
+    """Wrapper for telegram scraper"""
     try:
         print(f"  📡 Scraping Telegram...")
         jobs = scrape_telegram_channels()
@@ -349,7 +297,7 @@ def run():
 
     print(f"📦 Already seen: {len(seen_jobs)} jobs\n")
 
-    # ALL SCRAPERS ENABLED FOR TESTING
+    # ALL SCRAPERS ENABLED (except Jobicy)
     scrapers = [
         # Global Remote
         ("RemoteOK",            scrape_remoteok),
@@ -358,7 +306,7 @@ def run():
         ("WorkingNomads",       scrape_workingnomads),
         ("Braintrust",          scrape_braintrust),
         ("Virtustant",          scrape_virtustant),
-        ("Jobicy",              scrape_jobicy),
+        # ("Jobicy",              scrape_jobicy),  # REMOVED - Chinese jobs, poor filtering
         ("WeWorkRemotely",      scrape_weworkremotely),
         ("WeWorkRemotely+",     scrape_wwr_enhanced),
         ("WFH.io",              scrape_wfh_io),
@@ -390,7 +338,7 @@ def run():
             all_jobs.extend(jobs)
             source_counts[name] = count
             health = update_health(health, name, success=True)
-            time.sleep(1)  # Delay between scrapers
+            time.sleep(1)
         except Exception as e:
             print(f"     ❌ {name} FAILED: {e}")
             health = update_health(health, name, success=False)
@@ -404,7 +352,6 @@ def run():
     failed_send    = 0
 
     for job in all_jobs:
-        # Create unique job ID
         job_url = job.get('url', '')
         if job_url:
             job_id = re.sub(r'[^a-zA-Z0-9_]', '_', job_url)[:200]
@@ -427,7 +374,7 @@ def run():
                 new_count += 1
             else:
                 failed_send += 1
-            time.sleep(0.5)  # Delay between sends
+            time.sleep(0.5)
         except Exception as e:
             failed_send += 1
             print(f"     ⚠️ Failed to send: {e}")
@@ -457,7 +404,6 @@ def run():
     print(f"   👁️  Already seen: {skipped_seen}")
     print(f"   ❌ Failed:       {failed_send}")
     
-    # Print working/failed scrapers summary
     print(f"\n📊 Scraper Health Summary:")
     working = []
     failed = []
@@ -467,9 +413,9 @@ def run():
         else:
             working.append(name)
     
-    print(f"   ✅ Working: {', '.join(working[:5])}{'...' if len(working) > 5 else ''}")
+    print(f"   ✅ Working ({len(working)}): {', '.join(working[:5])}{'...' if len(working) > 5 else ''}")
     if failed:
-        print(f"   ❌ Failed: {', '.join(failed)}")
+        print(f"   ❌ Failed ({len(failed)}): {', '.join(failed)}")
 
 
 if __name__ == "__main__":
