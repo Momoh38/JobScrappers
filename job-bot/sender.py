@@ -226,19 +226,19 @@ def send_job(job: dict):
     time.sleep(1)
 
 
-def send_stats(stats: dict):
-    """Send a run summary message to the channel."""
-    from datetime import datetime
-    now = datetime.now().strftime("%d %b %Y, %I:%M %p")
+#def send_stats(stats: dict):
+#    """Send a run summary message to the channel."""
+#    from datetime import datetime
+#    now = datetime.now().strftime("%d %b %Y, %I:%M %p")
 
-    lines = [
-        f"📊 *Bot Run Summary*",
-        f"🕐 {now} WAT\n",
-        f"📨 New jobs sent:     *{stats.get('sent', 0)}*",
-        f"🚫 Filtered out:      *{stats.get('filtered', 0)}*",
-        f"👁️ Already seen:      *{stats.get('seen', 0)}*",
-        f"📡 Sources scraped:   *{stats.get('sources', 0)}*",
-    ]
+#    lines = [
+#        f"📊 *Bot Run Summary*",
+#        f"🕐 {now} WAT\n",
+#        f"📨 New jobs sent:     *{stats.get('sent', 0)}*",
+#        f"🚫 Filtered out:      *{stats.get('filtered', 0)}*",
+#        f"👁️ Already seen:      *{stats.get('seen', 0)}*",
+#        f"📡 Sources scraped:   *{stats.get('sources', 0)}*",
+#    ]
 
     breakdowns = stats.get("source_counts", {})
     if breakdowns:
