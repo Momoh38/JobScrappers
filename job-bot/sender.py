@@ -3,9 +3,10 @@ sender.py — Formats and sends job listings to Telegram.
 Features: quality stars, priority tag, inline Apply button, category headers,
           stats summary message, health alerts.
 """
-
-# Add at the very top of sender.py
+import os
+import requests
 import time
+
 from datetime import datetime
 
 # Rate limiting variables
@@ -51,9 +52,6 @@ def send_with_retry(url, payload, retry_count=0):
 
 
 
-import os
-import requests
-import time
 
 
 BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
