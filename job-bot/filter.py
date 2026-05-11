@@ -1,14 +1,14 @@
 """
 filter.py — All filtering logic:
   - Halal check
-  - English-only check
-  - Nigeria-friendly check
+  - Nigeria-friendly check (improved)
   - Job preference check (include/exclude)
   - Priority tagging
   - Salary filter
   - Age filter
   - HTML cleaning
   - Fuzzy duplicate detection
+  - REMOVED: Non-English filter (was causing issues)
 """
 
 import re
@@ -41,57 +41,132 @@ HARAM_KEYWORDS = [
     "cannabis dispensary", "marijuana dispensary",
 ]
 
-FOREIGN_LANGUAGE_KEYWORDS = [
-    "deutsch", "german speaking", "german language", "auf deutsch",
-    "françisch", "french speaking required", "en français",
-    "español", "spanish speaking required", "en español",
-    "português", "portuguese speaking", "em português",
-    "mandarin speaking", "cantonese speaking", "japanese speaking",
-    "arabic speaking required", "russian speaking", "dutch speaking",
-    "italian speaking", "korean speaking", "hindi speaking required",
-    "fluent in german", "fluent in french", "fluent in spanish",
-    "fluent in portuguese", "fluent in dutch", "fluent in italian",
-    "native german", "native french", "native spanish", "native dutch",
-    "native japanese", "native korean", "native mandarin",
-    "muttersprachler", "langue maternelle",
-]
-
-NON_NIGERIA_FRIENDLY = [
-    "us only", "usa only", "united states only", "must be based in us",
+# Countries/locations to filter out (jobs that require being in these locations)
+RESTRICTED_LOCATIONS = [
+    "usa only", "us only", "united states only", "must be based in us",
     "must reside in us", "north america only", "canada only",
-    "uk only", "eu only", "europe only",
+    "uk only", "eu only", "europe only", "germany only", "netherlands only",
     "right to work in the us", "authorized to work in the united states",
     "must be located in us", "physically located in the us",
-    "us citizen", "us citizenship required",
+    "us citizen", "us citizenship required", "green card",
     "security clearance", "nato clearance",
     "australian residents only", "new zealand only",
+    "romania", "romania only", "must be in romania",
+    "latin america only", "latam only",
 ]
 
 SUBSCRIPTION_SOURCES = ["theladders", "job-hunt.org"]
 
-# In-memory fuzzy duplicate store (resets each run — that's fine)
+# In-memory fuzzy duplicate store
 _seen_fingerprints = []
 
 
 def strip_html(text: str) -> str:
+    """Clean HTML tags and fix formatting"""
     if not text:
         return ""
-    clean = re.sub(r"<[^>]+>", " ", text)
+    
+    # Remove HTML tags
+    clean = re.sub(r'<[^>]+>', ' ', text)
+    
+    # Fix common HTML entities
     entities = {
         "&nbsp;": " ", "&amp;": "&", "&lt;": "<", "&gt;": ">",
         "&quot;": '"', "&#39;": "'", "&rsquo;": "'", "&lsquo;": "'",
         "&rdquo;": '"', "&ldquo;": '"', "&mdash;": "—", "&ndash;": "–",
+        "&amp;#39;": "'", "&#x27;": "'", "&apos;": "'",
+        "&amp;quot;": '"', "&raquo;": "»", "&laquo;": "«",
+        "&bull;": "•", "&copy;": "©", "&reg;": "®",
+        "â¢": "•", "â": "–", "â": "—", "â": "'", "â": '"', "â": '"',
     }
     for entity, replacement in entities.items():
         clean = clean.replace(entity, replacement)
-    return re.sub(r"\s+", " ", clean).strip()
+    
+    # Remove escaped slashes (like \/ becomes /)
+    clean = clean.replace('\\/', '/')
+    clean = clean.replace('\\', '')
+    
+    # Fix comma-separated single letters (like "o, p, e, r, a, t, i, o, n, s")
+    clean = re.sub(r'\b([a-z]),\s+([a-z]),\s+([a-z]),\s+([a-z])', r'\1\2\3\4', clean)
+    clean = re.sub(r',\s+([a-z])', r' \1', clean)
+    
+    # Remove extra whitespace and fix line breaks
+    clean = re.sub(r'\s+', ' ', clean)
+    clean = clean.strip()
+    
+    # Add line breaks back for readability (after periods)
+    clean = re.sub(r'(\.\s+)([A-Z])', r'\1\n\2', clean)
+    
+    return clean
+
+
+def clean_location(location: str) -> str:
+    """Clean and standardize location field"""
+    if not location:
+        return "Remote / Worldwide"
+    
+    # Remove HTML and clean
+    location = strip_html(location)
+    
+    # Remove "Remote - " prefix if exists
+    location = re.sub(r'^Remote\s*[-–]\s*', '', location)
+    
+    # If location is empty after cleaning, return Remote
+    if not location or len(location) < 2:
+        return "Remote / Worldwide"
+    
+    return location
+
+
+def is_nigeria_friendly(job: dict) -> bool:
+    """
+    Check if job is accessible from Nigeria.
+    Returns True if:
+    - Job explicitly mentions Nigeria/Africa
+    - Job is fully remote worldwide
+    - Job doesn't have restricted location requirements
+    """
+    combined = " ".join([
+        job.get("location", ""),
+        job.get("description", ""),
+        job.get("tags", ""),
+    ]).lower()
+    
+    # Clean the combined text first
+    combined = strip_html(combined)
+    
+    # If job explicitly mentions Nigeria or Africa - definitely good
+    if "nigeria" in combined or "africa" in combined or "lagos" in combined or "abuja" in combined:
+        return True
+    
+    # If job is fully remote with no location restrictions
+    if "remote" in combined and "worldwide" in combined:
+        return True
+    if "remote" in combined and "anywhere" in combined:
+        return True
+    if "remote" in combined and "global" in combined:
+        return True
+    
+    # Check for restricted locations (USA, UK, EU, etc.)
+    for keyword in RESTRICTED_LOCATIONS:
+        if keyword in combined:
+            print(f"     🌍 Filtered (location restricted): {job.get('title','?')[:50]} - {keyword}")
+            return False
+    
+    # If location contains specific countries only (Germany, Netherlands, etc.)
+    specific_countries = ['germany', 'netherlands', 'ireland', 'uk ', ' united kingdom', 'usa', 'canada', 'australia']
+    location_text = job.get("location", "").lower()
+    for country in specific_countries:
+        if country in location_text and 'remote' not in location_text:
+            print(f"     🌍 Filtered (country-specific, not remote): {job.get('title','?')[:50]} - {country}")
+            return False
+    
+    # Default: allow if remote or unclear
+    return True
 
 
 def is_fuzzy_duplicate(job: dict) -> bool:
-    """
-    Checks if a very similar job (same title + company) was already
-    seen THIS run from a different source. Uses fuzzy string matching.
-    """
+    """Check if a similar job was already seen"""
     fingerprint = f"{job.get('title','').lower().strip()} {job.get('company','').lower().strip()}"
     for seen in _seen_fingerprints:
         ratio = SequenceMatcher(None, fingerprint, seen).ratio()
@@ -103,13 +178,13 @@ def is_fuzzy_duplicate(job: dict) -> bool:
 
 
 def is_too_old(job: dict) -> bool:
-    """Skip jobs older than MAX_JOB_AGE_DAYS if a date is available."""
+    """Skip jobs older than MAX_JOB_AGE_DAYS"""
     if MAX_JOB_AGE_DAYS == 0:
         return False
-    from datetime import datetime, timezone
+    from datetime import datetime
     date_str = job.get("date_posted", "")
     if not date_str:
-        return False  # No date = don't discard, give benefit of doubt
+        return False
     try:
         formats = ["%Y-%m-%dT%H:%M:%S", "%Y-%m-%d", "%d/%m/%Y", "%B %d, %Y"]
         parsed = None
@@ -132,19 +207,21 @@ def is_too_old(job: dict) -> bool:
 
 
 def is_salary_too_low(job: dict) -> bool:
-    """Skip jobs whose salary is explicitly below your minimum thresholds."""
+    """Skip jobs with explicitly low salary"""
     if MIN_SALARY_NGN == 0 and MIN_SALARY_USD == 0:
         return False
     salary_text = job.get("salary", "").lower()
     if not salary_text:
-        return False  # Unknown salary — don't reject
-
-    # Try extract a number from salary text
+        return False
+    
+    # Clean salary text
+    salary_text = strip_html(salary_text)
+    
     numbers = re.findall(r"[\d,]+", salary_text.replace(",", ""))
     if not numbers:
         return False
     amount = int(numbers[0])
-
+    
     if "₦" in salary_text or "ngn" in salary_text or "naira" in salary_text:
         if MIN_SALARY_NGN > 0 and amount < MIN_SALARY_NGN:
             print(f"     💰 Filtered (salary too low ₦{amount:,}): {job.get('title','?')}")
@@ -157,12 +234,9 @@ def is_salary_too_low(job: dict) -> bool:
 
 
 def get_quality_score(job: dict) -> int:
-    """
-    Scores a job 1–5 based on how complete its listing is.
-    Shown as stars ⭐ in the Telegram message.
-    """
+    """Score job 1-5 based on completeness"""
     score = 1
-    if job.get("company"):
+    if job.get("company") and job.get("company") != "Not specified":
         score += 0.5
     if job.get("salary"):
         score += 1
@@ -170,7 +244,7 @@ def get_quality_score(job: dict) -> int:
         score += 1
     if job.get("url") and "http" in job.get("url", ""):
         score += 0.5
-    if job.get("tags"):
+    if job.get("tags") and len(job.get("tags", "")) > 5:
         score += 0.5
     if job.get("experience"):
         score += 0.5
@@ -178,209 +252,98 @@ def get_quality_score(job: dict) -> int:
 
 
 def is_priority(job: dict) -> bool:
-    """Returns True if the job matches any PRIORITY_KEYWORDS."""
+    """Check if job matches priority keywords"""
     text = f"{job.get('title','')} {job.get('description','')}".lower()
+    text = strip_html(text)
     return any(kw.lower() in text for kw in PRIORITY_KEYWORDS)
 
 
-def is_english(text: str) -> bool:
-    text_lower = text.lower()
-    return not any(kw in text_lower for kw in FOREIGN_LANGUAGE_KEYWORDS)
-
-
-def is_nigeria_friendly(job: dict) -> bool:
-    combined = " ".join([
-        job.get("location", ""),
-        job.get("description", ""),
-        job.get("tags", ""),
-    ]).lower()
-
-    if "nigeria" in combined:
-        return True
-    for keyword in NON_NIGERIA_FRIENDLY:
-        if keyword in combined:
-            print(f"     🌍 Filtered (not Nigeria-friendly): {job.get('title','?')}")
-            return False
-    if any(r in combined for r in ["remote", "worldwide", "anywhere", "global", "international"]):
-        return True
-    return True
+def clean_job_data(job: dict) -> dict:
+    """Clean all text fields in the job"""
+    # Clean title
+    if job.get('title'):
+        job['title'] = strip_html(job['title'])
+        # Remove weird patterns
+        job['title'] = re.sub(r'\\/', '/', job['title'])
+        job['title'] = job['title'].strip()
+    
+    # Clean description
+    if job.get('description'):
+        job['description'] = strip_html(job['description'])
+        # Remove too short descriptions (like just "<p> </p>")
+        if len(job['description']) < 20:
+            job['description'] = "Click the 'Apply Now' button below for more details."
+    
+    # Clean company
+    if job.get('company'):
+        job['company'] = strip_html(job['company'])
+        job['company'] = re.sub(r'\\/', '/', job['company'])
+        if not job['company'] or len(job['company']) < 2:
+            job['company'] = "Not specified"
+    
+    # Clean location
+    if job.get('location'):
+        job['location'] = clean_location(job['location'])
+    
+    return job
 
 
 def is_halal(job: dict) -> bool:
     """Master filter — returns True only if job passes ALL checks."""
-
-    # 1. Clean HTML first
-    job["description"] = strip_html(job.get("description", ""))
-
-    # 2. Subscription source
-    source = job.get("source", "").lower()
-    if any(sub in source for sub in SUBSCRIPTION_SOURCES):
-        return False
-
-    # 3. Minimum description
+    
+    # First clean all HTML and formatting
+    job = clean_job_data(job)
+    
+    # 1. Minimum description length check
     if MIN_DESCRIPTION_LENGTH > 0:
         if len(job.get("description", "")) < MIN_DESCRIPTION_LENGTH:
             return False
-
-    # 4. Too old
+    
+    # 2. Too old check
     if is_too_old(job):
         return False
-
-    # 5. Salary too low
+    
+    # 3. Salary too low
     if is_salary_too_low(job):
         return False
-
-    # 6. Fuzzy duplicate (same job from multiple sources)
+    
+    # 4. Fuzzy duplicate check
     if is_fuzzy_duplicate(job):
         return False
-
+    
+    # 5. Get text for keyword checks
     text = " ".join([
         job.get("title", ""),
         job.get("company", ""),
         job.get("description", ""),
         job.get("tags", ""),
     ]).lower()
-
-    # 7. Haram keywords
+    
+    # 6. Haram keywords check
     for keyword in HARAM_KEYWORDS:
         if keyword.lower() in text:
-            print(f"     🚫 Filtered (haram): '{keyword}' in: {job.get('title','?')}")
+            print(f"     🚫 Filtered (haram): '{keyword}' in: {job.get('title','?')[:50]}")
             return False
-
-    # 8. English only
-    if not is_english(text):
-        print(f"     🔤 Filtered (non-English): {job.get('title','?')}")
-        return False
-
-    # 9. Nigeria-friendly
-    if not is_nigeria_friendly(job):
-        return False
-
-    # 10. Excluded titles
+    
+    # 7. Excluded titles check
     title_lower = job.get("title", "").lower()
     for keyword in EXCLUDE_TITLES:
         if keyword.lower() in title_lower:
-            print(f"     🚷 Filtered (excluded): {job.get('title','?')}")
+            print(f"     🚷 Filtered (excluded): {job.get('title','?')[:50]}")
             return False
-
-    # 11. Must match at least one wanted role
+    
+    # 8. Nigeria-friendly check (includes location filtering)
+    if not is_nigeria_friendly(job):
+        return False
+    
+    # 9. Must match at least one wanted role
     combined = f"{title_lower} {job.get('description','').lower()} {job.get('tags','').lower()}"
     if not any(kw.lower() in combined for kw in INCLUDE_KEYWORDS):
-        print(f"     📋 Filtered (no matching role): {job.get('title','?')}")
+        print(f"     📋 Filtered (no matching role): {job.get('title','?')[:50]}")
         return False
-
-    # 12. Tag quality score and priority onto the job for sender to use
+    
+    # 10. Add quality and priority scores
     job["_quality"] = get_quality_score(job)
     job["_priority"] = is_priority(job)
-
-    return True
-
-def is_halal(job):
-    """
-    Main filtering function - returns True if job should be sent
-    """
-    
-    # Get job text content to check
-    title = job.get('title', '')
-    description = job.get('description', '')
-    company = job.get('company', '')
-    tags = job.get('tags', '')
-    
-    # Combine all text for language detection
-    all_text = f"{title} {description} {company} {tags}".lower()
-    
-    # ========== NEW: ENGLISH LANGUAGE FILTER ==========
-    if not is_english_job(all_text):
-        print(f"     🚫 Filtered (non-English): {title[:50]}...")
-        return False
-    # ==================================================
-    
-    # Your existing filters below...
-    # (haram filter, location filter, etc.)
     
     return True
-
-
-def is_english_job(text):
-    """
-    Detect if job posting is primarily in English
-    Returns True for English, False for foreign languages
-    """
-    if not text:
-        return True  # Empty text assume English
-    
-    # Common English words that appear in most job postings
-    english_indicators = [
-        'the', 'and', 'for', 'you', 'will', 'work', 'job', 'role',
-        'position', 'team', 'company', 'remote', 'experience', 'skills',
-        'required', 'responsibilities', 'qualifications', 'benefits',
-        'salary', 'full-time', 'part-time', 'contract', 'freelance'
-    ]
-    
-    # Common foreign language indicators (block these)
-    foreign_indicators = {
-        'german': ['german', 'deutsch', 'fließend', 'muttersprache', 'sprache', 'deutsche'],
-        'french': ['french', 'français', 'parlez', 'bilingue', 'francophone', 'langue'],
-        'spanish': ['spanish', 'español', 'idioma', 'bilingüe', 'castellano'],
-        'portuguese': ['portuguese', 'português', 'idioma', 'brasil'],
-        'dutch': ['dutch', 'nederlands', 'vloeiend', 'taal'],
-        'italian': ['italian', 'italiano', 'lingua', 'madrelingua'],
-        'chinese': ['chinese', 'mandarin', '普通话', '中文', '汉语'],
-        'japanese': ['japanese', '日本語', 'nihongo', 'japonaise'],
-        'korean': ['korean', '한국어', 'hangul'],
-        'russian': ['russian', 'русский', 'russkiy'],
-        'arabic': ['arabic', 'العربية', 'arabe', 'arabisch'],
-        'hindi': ['hindi', 'हिन्दी'],
-        'swedish': ['swedish', 'svenska', 'skandinavisk'],
-        'polish': ['polish', 'polski', 'język'],
-        'turkish': ['turkish', 'türkçe', 'dili'],
-    }
-    
-    text_lower = text.lower()
-    
-    # Count English words present
-    english_count = sum(1 for word in english_indicators if word in text_lower)
-    
-    # Check for foreign language indicators (if found, likely non-English)
-    for language, indicators in foreign_indicators.items():
-        for indicator in indicators:
-            if indicator in text_lower:
-                # Check if the job REQUIRES this foreign language
-                if any(phrase in text_lower for phrase in [
-                    f'{indicator} required', f'{indicator} speaking', 
-                    f'fluent in {indicator}', f'{indicator} language',
-                    'native ' + indicator
-                ]):
-                    return False
-    
-    # If very few English words, likely non-English
-    if english_count < 3 and len(text.split()) > 20:
-        return False
-    
-    return True
-
-
-def contains_foreign_language_requirement(text):
-    """
-    Specifically check for requirements to speak foreign languages
-    More aggressive filtering for jobs requiring non-English
-    """
-    text_lower = text.lower()
-    
-    # Patterns that indicate foreign language requirement
-    foreign_patterns = [
-        r'(?:fluent|proficient|native|business)\s+(?:in|level)\s+(?:german|french|spanish|mandarin|japanese|dutch|italian)',
-        r'(?:german|french|spanish|dutch|italian|mandarin|japanese)\s+(?:required|mandatory|essential|must)',
-        r'(?:speak|write|communicate)\s+(?:fluent|flowing)\s+(?:german|french|spanish)',
-        r'language\s+requirement\s*:\s*(?:german|french|spanish)',
-        r'bring\s+your\s+(?:german|french|spanish)',
-        r'deutschkenntnisse',  # German
-        r'français\s+obligatoire',  # French
-        r'español\s+(?:requerido|necesario)',  # Spanish
-    ]
-    
-    for pattern in foreign_patterns:
-        if re.search(pattern, text_lower):
-            return True
-    
-    return False
