@@ -1,6 +1,6 @@
 """
 main.py — Entry point for Halal Jobs Bot
-UPDATED: Removes links from title field
+UPDATED: All job sources enabled for testing
 """
 
 import json
@@ -24,14 +24,14 @@ from scrapers.himalayas       import scrape_himalayas
 
 
 # --- Nigeria-specific ---
-#from scrapers.jobberman       import scrape_jobberman
-#from scrapers.myjobmag        import scrape_myjobmag
-#from scrapers.ngcareers       import scrape_ngcareers
-#from scrapers.jobgurus        import scrape_jobgurus
+from scrapers.jobberman       import scrape_jobberman
+from scrapers.myjobmag        import scrape_myjobmag
+from scrapers.ngcareers       import scrape_ngcareers
+from scrapers.jobgurus        import scrape_jobgurus
 
 # --- International / NGO / Africa ---
-#from scrapers.ngo_jobs        import scrape_ngo_jobs
-#from scrapers.africa_jobs     import scrape_africa_jobs
+from scrapers.ngo_jobs        import scrape_ngo_jobs
+from scrapers.africa_jobs     import scrape_africa_jobs
 
 # --- Social Media ---
 from scrapers.telegram_channels import scrape_telegram_channels
@@ -48,11 +48,11 @@ from scrapers.telegram_channels import scrape_telegram_channels
 # from scrapers.dynamitejobs  import scrape_dynamitejobs (abroad-focused)
 # from scrapers.freelance     import scrape_freelance    (optional freelance)
 # from scrapers.arbeitnow     import scrape_arbeitnow    (Germany-focused)
-#from scrapers.doballi         import scrape_doballi
-#from scrapers.pangaea           import scrape_pangaea
-#from scrapers.relocate_me       import scrape_relocate_me
-#from scrapers.remoters          import scrape_remoters (Not useful)
-#from scrapers.linkedin_rss    import scrape_linkedin_rss
+# from scrapers.doballi        import scrape_doballi
+# from scrapers.pangaea        import scrape_pangaea
+# from scrapers.relocate_me    import scrape_relocate_me
+# from scrapers.remoters       import scrape_remoters
+# from scrapers.linkedin_rss   import scrape_linkedin_rss
 
 
 from filter import is_halal
@@ -275,38 +275,36 @@ def enhance_telegram_job(job: dict) -> dict:
     enhanced_job = {
         'title': title,
         'company': company,
-        'description': description,  # This is the actual job details text
+        'description': description,
         'location': job.get('location', 'Remote'),
         'salary': job.get('salary', ''),
         'tags': job.get('tags', ''),
         'source': f"Telegram: {job.get('source_group', 'Jobs Group')}",
-        'url': job_links[0] if job_links else None,  # The application link
+        'url': job_links[0] if job_links else None,
         'job_links': job_links,
         'date_posted': job.get('date_posted', datetime.now().isoformat()),
         'message_id': job.get('message_id'),
         'source_group': job.get('source_group'),
     }
     
-    # Copy any existing fields we might have missed
+    # Copy any existing fields
     for key, value in job.items():
         if key not in enhanced_job and key not in ['_no_external_link']:
             enhanced_job[key] = value
     
-    # Mark if no external link found (these will be skipped)
+    # Mark if no external link found
     if not job_links:
         enhanced_job['_no_external_link'] = True
         print(f"     ⚠️ No external link found - will skip")
     else:
         print(f"     🔗 Found link: {job_links[0][:60]}...")
         print(f"     📝 Clean Title: {title[:50]}")
-        desc_preview = description[:60] + "..." if len(description) > 60 else description
-        print(f"     📝 Description preview: {desc_preview}")
     
     return enhanced_job
 
 
 def enhanced_scrape_telegram():
-    """Wrapper for telegram scraper with link extraction - NEVER SKIPS VALID JOBS"""
+    """Wrapper for telegram scraper with link extraction"""
     try:
         print(f"  📡 Scraping Telegram...")
         jobs = scrape_telegram_channels()
@@ -322,7 +320,6 @@ def enhanced_scrape_telegram():
         
         for job in jobs:
             enhanced = enhance_telegram_job(job)
-            # Only skip jobs that have NO external link at all
             if enhanced.get('_no_external_link'):
                 skipped_no_link += 1
             else:
@@ -331,26 +328,20 @@ def enhanced_scrape_telegram():
         print(f"     ✅ {len(enhanced_jobs)} jobs with valid external links")
         print(f"     ⚠️ {skipped_no_link} jobs skipped (no external link found)")
         
-        # Show sample of first job
         if enhanced_jobs:
             sample = enhanced_jobs[0]
-            print(f"     📋 Sample job:")
-            print(f"        Title: {sample.get('title', 'N/A')[:50]}")
-            print(f"        Link: {sample.get('url', 'N/A')[:60]}")
-            print(f"        Description: {sample.get('description', '')[:80]}...")
+            print(f"     📋 Sample: {sample.get('title', 'N/A')[:50]}")
         
         return enhanced_jobs
         
     except Exception as e:
         print(f"     ❌ Telegram FAILED: {e}")
-        import traceback
-        traceback.print_exc()
         return []
 
 
 def run():
     print(f"🚀 Halal Jobs Bot — {datetime.now().strftime('%d %b %Y %H:%M')} WAT")
-    print(f"📍 Extracting job descriptions and application links from Telegram\n")
+    print(f"📍 Testing ALL job sources with updated formatting\n")
 
     seen_jobs = set(load_json(SEEN_JOBS_FILE, []))
     health    = load_json(HEALTH_FILE, {})
@@ -358,11 +349,33 @@ def run():
 
     print(f"📦 Already seen: {len(seen_jobs)} jobs\n")
 
+    # ALL SCRAPERS ENABLED FOR TESTING
     scrapers = [
-        # Social Media - Using enhanced wrapper
-        ("Telegram", enhanced_scrape_telegram),
+        # Global Remote
+        ("RemoteOK",            scrape_remoteok),
+        ("Remotive",            scrape_remotive),
+        ("TheMuse",             scrape_themuse),
+        ("WorkingNomads",       scrape_workingnomads),
+        ("Braintrust",          scrape_braintrust),
+        ("Virtustant",          scrape_virtustant),
+        ("Jobicy",              scrape_jobicy),
+        ("WeWorkRemotely",      scrape_weworkremotely),
+        ("WeWorkRemotely+",     scrape_wwr_enhanced),
+        ("WFH.io",              scrape_wfh_io),
+        ("Himalayas",           scrape_himalayas),
         
-        # Other scrapers are commented out as before
+        # Nigeria-specific
+        ("Jobberman",           scrape_jobberman),
+        ("MyJobMag",            scrape_myjobmag),
+        ("NGCareers",           scrape_ngcareers),
+        ("JobGurus",            scrape_jobgurus),
+        
+        # International / NGO / Africa
+        ("NGO / UN Jobs",       scrape_ngo_jobs),
+        ("Africa Jobs",         scrape_africa_jobs),
+        
+        # Social Media (Enhanced)
+        ("Telegram",            enhanced_scrape_telegram),
     ]
 
     all_jobs      = []
@@ -370,19 +383,20 @@ def run():
 
     for name, scraper in scrapers:
         try:
+            print(f"  📡 Scraping {name}...")
             jobs = scraper()
             count = len(jobs)
-            print(f"     ✅ Found {count} jobs with valid links")
+            print(f"     ✅ Found {count} jobs")
             all_jobs.extend(jobs)
             source_counts[name] = count
             health = update_health(health, name, success=True)
-            time.sleep(0.5)
+            time.sleep(1)  # Delay between scrapers
         except Exception as e:
             print(f"     ❌ {name} FAILED: {e}")
             health = update_health(health, name, success=False)
             source_counts[name] = 0
 
-    print(f"\n📋 Total jobs with valid links: {len(all_jobs)}")
+    print(f"\n📋 Total collected: {len(all_jobs)}")
 
     new_count      = 0
     skipped_seen   = 0
@@ -390,12 +404,13 @@ def run():
     failed_send    = 0
 
     for job in all_jobs:
-        # Create unique job ID based on URL
+        # Create unique job ID
         job_url = job.get('url', '')
-        if not job_url:
-            continue
-            
-        job_id = re.sub(r'[^a-zA-Z0-9_]', '_', job_url)[:200]
+        if job_url:
+            job_id = re.sub(r'[^a-zA-Z0-9_]', '_', job_url)[:200]
+        else:
+            job_id = f"{job.get('title','')}_{job.get('company','')}"
+            job_id = re.sub(r'[^a-zA-Z0-9_]', '_', job_id)[:200]
 
         if job_id in seen_jobs:
             skipped_seen += 1
@@ -412,7 +427,7 @@ def run():
                 new_count += 1
             else:
                 failed_send += 1
-            time.sleep(0.5)
+            time.sleep(0.5)  # Delay between sends
         except Exception as e:
             failed_send += 1
             print(f"     ⚠️ Failed to send: {e}")
@@ -441,6 +456,20 @@ def run():
     print(f"   🚫 Filtered:     {skipped_filter}")
     print(f"   👁️  Already seen: {skipped_seen}")
     print(f"   ❌ Failed:       {failed_send}")
+    
+    # Print working/failed scrapers summary
+    print(f"\n📊 Scraper Health Summary:")
+    working = []
+    failed = []
+    for name, h in health.items():
+        if h.get('failures', 0) >= 2:
+            failed.append(name)
+        else:
+            working.append(name)
+    
+    print(f"   ✅ Working: {', '.join(working[:5])}{'...' if len(working) > 5 else ''}")
+    if failed:
+        print(f"   ❌ Failed: {', '.join(failed)}")
 
 
 if __name__ == "__main__":
