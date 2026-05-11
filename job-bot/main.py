@@ -230,7 +230,7 @@ def run():
     if new_count > 0 or current_hour in [7, 13, 19]:
         send_stats(stats)
 
-    maybe_send_weekly_report(health, history)
+    #maybe_send_weekly_report(health, history)
 
     print(f"\n✅ Done!")
     print(f"   📨 Sent:         {new_count}")
