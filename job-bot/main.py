@@ -1,6 +1,6 @@
 """
 main.py — Entry point for Halal Jobs Bot
-UPDATED: Never skips jobs with valid links - shows placeholder for short descriptions
+UPDATED: Removes links from title field
 """
 
 import json
@@ -126,6 +126,20 @@ def extract_external_job_links(text: str) -> list:
     return unique_links
 
 
+def remove_links_from_text(text: str) -> str:
+    """Remove all URLs from text"""
+    if not text:
+        return text
+    
+    # Remove URLs
+    text = re.sub(r'https?://[^\s<>"\')\]]+', '', text)
+    # Clean up extra spaces
+    text = re.sub(r'\s+', ' ', text)
+    text = text.strip()
+    
+    return text
+
+
 def extract_job_description(text: str, job_links: list) -> str:
     """
     Extract the actual job description by removing the job links from the text.
@@ -139,6 +153,9 @@ def extract_job_description(text: str, job_links: list) -> str:
     # Remove all job links from the description
     for link in job_links:
         description = description.replace(link, '')
+    
+    # Remove any URLs (in case any were missed)
+    description = re.sub(r'https?://[^\s<>"\')\]]+', '', description)
     
     # Remove any leftover Telegram group mentions
     description = re.sub(r'@\w+', '', description)
@@ -165,28 +182,37 @@ def extract_job_description(text: str, job_links: list) -> str:
 
 
 def extract_title_from_message(text: str) -> str:
-    """Extract a clean title from the message"""
+    """Extract a clean title from the message - WITHOUT any links"""
     if not text:
         return "Job Opportunity"
     
-    lines = text.split('\n')
+    # First, remove all links from the text
+    text_without_links = remove_links_from_text(text)
+    
+    lines = text_without_links.split('\n')
     
     # Look for the first meaningful line that's not a link or mention
     for line in lines[:5]:
         line = line.strip()
-        # Skip empty lines, links, and mentions
-        if line and not line.startswith('http') and not line.startswith('@'):
+        # Skip empty lines, mentions
+        if line and not line.startswith('@'):
             # Remove common prefixes
-            cleaned = re.sub(r'^(URGENTLY|WE\'RE|HIRING|VACANCY|JOB|POSITION|NOW HIRING)[:\s]+', '', line, flags=re.IGNORECASE)
+            cleaned = re.sub(r'^(URGENTLY|WE\'RE|HIRING|VACANCY|JOB|POSITION|NOW HIRING|🚨|🔥|💼)[:\s]+', '', line, flags=re.IGNORECASE)
             cleaned = re.sub(r'@\w+', '', cleaned)
-            if cleaned and len(cleaned) > 5 and len(cleaned) < 200:
-                return cleaned.strip()
+            cleaned = cleaned.strip()
+            
+            # Make sure it's not a URL (just in case)
+            if cleaned and not cleaned.startswith('http') and len(cleaned) > 5 and len(cleaned) < 200:
+                # Check if it has meaningful words (not just symbols)
+                if re.search(r'[a-zA-Z]', cleaned):
+                    return cleaned
     
-    # If no good title found, try to use the first line that contains any text
+    # If no good title found, try to use the first line that contains letters
     for line in lines[:3]:
         line = line.strip()
-        if line and len(line) > 3:
-            return line[:100]
+        line_without_links = remove_links_from_text(line)
+        if line_without_links and len(line_without_links) > 3 and re.search(r'[a-zA-Z]', line_without_links):
+            return line_without_links[:100]
     
     return "New Job Opportunity"
 
@@ -195,6 +221,9 @@ def extract_company_from_message(text: str) -> str:
     """Extract company name from message"""
     if not text:
         return "Not specified"
+    
+    # Remove links first
+    text = remove_links_from_text(text)
     
     # Look for common patterns
     patterns = [
@@ -231,18 +260,16 @@ def enhance_telegram_job(job: dict) -> dict:
     # Extract the actual job description (remove links)
     description = extract_job_description(raw_text, job_links)
     
-    # Extract title and company
+    # Extract title and company (with links removed)
     title = extract_title_from_message(raw_text)
     company = extract_company_from_message(raw_text)
     
+    # Double-check title doesn't contain any links
+    title = remove_links_from_text(title)
+    
     # If we have no title but have a link, create a generic title
-    if (not title or title == "Job Opportunity") and job_links:
-        # Try to extract from URL
-        url = job_links[0]
-        if 'job' in url.lower():
-            title = "Job Opportunity"
-        else:
-            title = "New Position Available"
+    if (not title or title == "Job Opportunity" or len(title) < 3) and job_links:
+        title = "New Job Opportunity"
     
     # Enhance the job object
     enhanced_job = {
@@ -271,9 +298,9 @@ def enhance_telegram_job(job: dict) -> dict:
         print(f"     ⚠️ No external link found - will skip")
     else:
         print(f"     🔗 Found link: {job_links[0][:60]}...")
-        print(f"     📝 Title: {title[:50]}")
+        print(f"     📝 Clean Title: {title[:50]}")
         desc_preview = description[:60] + "..." if len(description) > 60 else description
-        print(f"     📝 Description: {desc_preview}")
+        print(f"     📝 Description preview: {desc_preview}")
     
     return enhanced_job
 
