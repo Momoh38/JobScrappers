@@ -125,55 +125,75 @@ def get_category(job: dict) -> str:
     return "🌐 General / Remote"
 
 
-def escape(text: str) -> str:
+def escape_markdown(text: str) -> str:
+    """Escape Markdown special characters"""
     if not text:
         return ""
-    # Escape Markdown special characters
+    # Escape special characters for Markdown
     special_chars = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
     for ch in special_chars:
         text = str(text).replace(ch, f"\\{ch}")
-    return str(text)[:500]  # Limit length
+    return str(text)
+
+
+def clean_description(desc: str, max_length: int = 800) -> str:
+    """Clean and truncate description"""
+    if not desc:
+        return ""
+    
+    # Remove excessive whitespace and newlines
+    desc = re.sub(r'\n\s*\n', '\n\n', desc)  # Keep double newlines as paragraph breaks
+    desc = re.sub(r' +', ' ', desc)  # Remove extra spaces
+    desc = desc.strip()
+    
+    # Truncate if too long
+    if len(desc) > max_length:
+        desc = desc[:max_length].strip() + "..."
+    
+    return desc
 
 
 def format_job(job: dict) -> str:
-    title    = job.get("title", "N/A")
-    company  = job.get("company", "N/A")
+    """Format job with proper description text, not just the link"""
+    title = job.get("title", "N/A")
+    company = job.get("company", "N/A")
     location = job.get("location", "Remote / Nigeria")
-    salary   = job.get("salary", "")
-    desc     = job.get("description", "")
-    source   = job.get("source", "")
-    tags     = job.get("tags", "")
-    exp      = job.get("experience", "")
-    quality  = job.get("_quality", 3)
+    salary = job.get("salary", "")
+    description = job.get("description", "")
+    source = job.get("source", "")
+    tags = job.get("tags", "")
+    exp = job.get("experience", "")
+    quality = job.get("_quality", 3)
     priority = job.get("_priority", False)
 
-    if desc and len(desc) > 350:
-        desc = desc[:350].strip() + "..."
+    # Clean and truncate description
+    description = clean_description(description, 800)
 
     stars = "⭐" * quality
     priority_tag = "🔴 *PRIORITY MATCH*\n" if priority else ""
 
     lines = [
         priority_tag,
-        f"💼 *{escape(title)}*",
-        f"🏢 {escape(company)}",
-        f"📍 {escape(location)}",
+        f"💼 *{escape_markdown(title)}*",
+        f"🏢 {escape_markdown(company)}",
+        f"📍 {escape_markdown(location)}",
     ]
 
     if salary:
-        lines.append(f"💰 {escape(salary)}")
+        lines.append(f"💰 {escape_markdown(salary)}")
     if exp:
-        lines.append(f"📊 {escape(exp)}")
+        lines.append(f"📊 {escape_markdown(exp)}")
     if tags:
-        lines.append(f"🏷️ {escape(tags)}")
+        lines.append(f"🏷️ {escape_markdown(tags)}")
 
     lines.append(f"✨ Quality: {stars}")
 
-    if desc:
-        lines.append(f"\n📋 _{escape(desc)}_")
+    # Show the ACTUAL JOB DESCRIPTION, not the link
+    if description:
+        lines.append(f"\n📋 {escape_markdown(description)}")
 
     if source:
-        lines.append(f"\n_Source: {escape(source)}_")
+        lines.append(f"\n_Source: {escape_markdown(source)}_")
 
     return "\n".join(l for l in lines if l)
 
@@ -187,7 +207,7 @@ def send_job(job: dict):
         print(f"     ⚠️ Skipping Telegram internal link: {url_link[:50]}")
         return False
     
-    message  = format_job(job)
+    message = format_job(job)
     category = get_category(job)
 
     # Send category header if this is the first job in this category this run
@@ -201,7 +221,7 @@ def send_job(job: dict):
         "chat_id": CHANNEL_ID,
         "text": message,
         "parse_mode": "Markdown",
-        "disable_web_page_preview": False,  # Allow preview to show link domain
+        "disable_web_page_preview": True,  # Disable preview to keep message clean
     }
 
     if url_link and url_link.startswith("http") and 't.me' not in url_link:
@@ -216,7 +236,6 @@ def send_job(job: dict):
     if success:
         priority_flag = " 🔴" if job.get("_priority") else ""
         print(f"     ✅ Sent{priority_flag}: {job.get('title','?')[:50]}...")
-        print(f"     🔗 Link: {url_link[:80]}...")
         return True
     else:
         print(f"     ❌ Failed to send: {job.get('title','?')}")
@@ -242,7 +261,7 @@ def send_stats(stats: dict):
         top = sorted(breakdowns.items(), key=lambda x: x[1], reverse=True)[:5]
         lines.append("\n*Top sources this run:*")
         for src, count in top:
-            lines.append(f"  • {escape(src)}: {count} jobs")
+            lines.append(f"  • {escape_markdown(src)}: {count} jobs")
 
     _send_text("\n".join(lines))
 
@@ -251,7 +270,7 @@ def send_health_alert(scraper_name: str, consecutive_failures: int):
     """Alert if a scraper has been failing repeatedly."""
     msg = (
         f"⚠️ *Health Alert*\n"
-        f"`{escape(scraper_name)}` has failed "
+        f"`{escape_markdown(scraper_name)}` has failed "
         f"*{consecutive_failures}* runs in a row.\n"
         f"It may need fixing."
     )
