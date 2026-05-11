@@ -1,14 +1,6 @@
 """
-filter.py — All filtering logic:
-  - Halal check
-  - Nigeria-friendly check (improved)
-  - Job preference check (include/exclude)
-  - Priority tagging
-  - Salary filter
-  - Age filter
-  - HTML cleaning
-  - Fuzzy duplicate detection
-  - REMOVED: Non-English filter (was causing issues)
+filter.py — All filtering logic
+UPDATED: Better location filtering, German language detection, HTML cleaning
 """
 
 import re
@@ -41,7 +33,7 @@ HARAM_KEYWORDS = [
     "cannabis dispensary", "marijuana dispensary",
 ]
 
-# Countries/locations to filter out (jobs that require being in these locations)
+# Countries/locations that are NOT accessible from Nigeria
 RESTRICTED_LOCATIONS = [
     "usa only", "us only", "united states only", "must be based in us",
     "must reside in us", "north america only", "canada only",
@@ -52,12 +44,27 @@ RESTRICTED_LOCATIONS = [
     "security clearance", "nato clearance",
     "australian residents only", "new zealand only",
     "romania", "romania only", "must be in romania",
-    "latin america only", "latam only",
+    "latin america only", "latam only", "brazil", "colombia", "philippines",
+    "americas", "europe", "asia", "oceania",  # Continents without worldwide
+    "switzerland", "switzerland only",
+]
+
+# German language indicators (block these jobs)
+GERMAN_INDICATORS = [
+    "🇩🇪", "german", "deutsch", "fließend", "muttersprache", "sprache",
+    "german speaking", "german language", "auf deutsch", "die stelle",
+    "wir suchen", "ihre aufgaben", "ihr profil", "remote deutschland",
+    "german required", "deutschkenntnisse", "muttersprachler",
+]
+
+# Locations that are ACCEPTABLE (remote worldwide or Nigeria)
+ACCEPTABLE_LOCATIONS = [
+    "worldwide", "global", "anywhere", "remote", "nigeria", "africa",
+    "uk", "united kingdom", "europe", "canada", "australia",  # Remote-friendly regions
 ]
 
 SUBSCRIPTION_SOURCES = ["theladders", "job-hunt.org"]
 
-# In-memory fuzzy duplicate store
 _seen_fingerprints = []
 
 
@@ -82,22 +89,70 @@ def strip_html(text: str) -> str:
     for entity, replacement in entities.items():
         clean = clean.replace(entity, replacement)
     
-    # Remove escaped slashes (like \/ becomes /)
+    # Remove escaped slashes
     clean = clean.replace('\\/', '/')
     clean = clean.replace('\\', '')
     
-    # Fix comma-separated single letters (like "o, p, e, r, a, t, i, o, n, s")
+    # Fix comma-separated single letters
     clean = re.sub(r'\b([a-z]),\s+([a-z]),\s+([a-z]),\s+([a-z])', r'\1\2\3\4', clean)
     clean = re.sub(r',\s+([a-z])', r' \1', clean)
     
-    # Remove extra whitespace and fix line breaks
+    # Remove excessive whitespace
     clean = re.sub(r'\s+', ' ', clean)
     clean = clean.strip()
     
-    # Add line breaks back for readability (after periods)
+    # Add line breaks back after periods
     clean = re.sub(r'(\.\s+)([A-Z])', r'\1\n\2', clean)
     
     return clean
+
+
+def is_german_job(text: str) -> bool:
+    """Check if job posting is in German or requires German language"""
+    if not text:
+        return False
+    
+    text_lower = text.lower()
+    
+    # Check for German indicators
+    for indicator in GERMAN_INDICATORS:
+        if indicator.lower() in text_lower:
+            return True
+    
+    # Check for German flag emoji
+    if '🇩🇪' in text:
+        return True
+    
+    return False
+
+
+def is_location_restricted(location: str, description: str) -> bool:
+    """Check if job location restricts Nigerians from applying"""
+    combined = f"{location.lower()} {description.lower()}"
+    
+    # First check if job is explicitly remote worldwide
+    remote_indicators = ['remote', 'worldwide', 'global', 'anywhere', 'work from home']
+    is_remote = any(indicator in combined for indicator in remote_indicators)
+    
+    if is_remote:
+        # Check if remote is restricted to specific regions
+        for restricted in RESTRICTED_LOCATIONS:
+            if restricted in combined:
+                return True
+        return False  # Remote without restrictions is fine
+    
+    # Check for specific country restrictions
+    for restricted in RESTRICTED_LOCATIONS:
+        if restricted in combined:
+            return True
+    
+    # Check if location contains only specific countries (no remote option)
+    countries = ['germany', 'netherlands', 'brazil', 'colombia', 'philippines', 'switzerland', 'us', 'usa']
+    for country in countries:
+        if country in location.lower() and 'remote' not in location.lower():
+            return True
+    
+    return False
 
 
 def clean_location(location: str) -> str:
@@ -105,13 +160,16 @@ def clean_location(location: str) -> str:
     if not location:
         return "Remote / Worldwide"
     
-    # Remove HTML and clean
+    # Remove HTML
     location = strip_html(location)
     
-    # Remove "Remote - " prefix if exists
+    # Remove prefix
     location = re.sub(r'^Remote\s*[-–]\s*', '', location)
     
-    # If location is empty after cleaning, return Remote
+    # If location is US/Canada only, mark as restricted
+    if location.lower() in ['us', 'usa', 'canada', 'uk']:
+        return location
+    
     if not location or len(location) < 2:
         return "Remote / Worldwide"
     
@@ -121,64 +179,61 @@ def clean_location(location: str) -> str:
 def is_nigeria_friendly(job: dict) -> bool:
     """
     Check if job is accessible from Nigeria.
-    Returns True if:
-    - Job explicitly mentions Nigeria/Africa
-    - Job is fully remote worldwide
-    - Job doesn't have restricted location requirements
+    Returns False if:
+    - Job requires being in specific countries (US, Brazil, Germany, etc.)
+    - Job is written in German
+    - Location is restricted to Americas/Europe/Asia (without worldwide)
     """
-    combined = " ".join([
-        job.get("location", ""),
-        job.get("description", ""),
-        job.get("tags", ""),
-    ]).lower()
+    title = job.get("title", "")
+    location = job.get("location", "")
+    description = job.get("description", "")
+    combined = f"{title} {location} {description}"
     
-    # Clean the combined text first
+    # Clean first
     combined = strip_html(combined)
+    location_clean = clean_location(location)
     
-    # If job explicitly mentions Nigeria or Africa - definitely good
-    if "nigeria" in combined or "africa" in combined or "lagos" in combined or "abuja" in combined:
+    # Check for German language
+    if is_german_job(combined) or is_german_job(title):
+        print(f"     🇩🇪 Filtered (German language job): {title[:50]}")
+        return False
+    
+    # Check for German flag in title
+    if '🇩🇪' in title:
+        print(f"     🇩🇪 Filtered (German job): {title[:50]}")
+        return False
+    
+    # Check location restrictions
+    if is_location_restricted(location, description):
+        print(f"     🌍 Filtered (location restricted): {title[:50]} - {location_clean}")
+        return False
+    
+    # If job explicitly mentions Nigeria - definitely good
+    if "nigeria" in combined or "lagos" in combined or "abuja" in combined:
         return True
     
-    # If job is fully remote with no location restrictions
-    if "remote" in combined and "worldwide" in combined:
-        return True
-    if "remote" in combined and "anywhere" in combined:
-        return True
-    if "remote" in combined and "global" in combined:
+    # If job is remote and doesn't have specific location requirements
+    if "remote" in combined and not is_location_restricted(location, description):
         return True
     
-    # Check for restricted locations (USA, UK, EU, etc.)
-    for keyword in RESTRICTED_LOCATIONS:
-        if keyword in combined:
-            print(f"     🌍 Filtered (location restricted): {job.get('title','?')[:50]} - {keyword}")
-            return False
-    
-    # If location contains specific countries only (Germany, Netherlands, etc.)
-    specific_countries = ['germany', 'netherlands', 'ireland', 'uk ', ' united kingdom', 'usa', 'canada', 'australia']
-    location_text = job.get("location", "").lower()
-    for country in specific_countries:
-        if country in location_text and 'remote' not in location_text:
-            print(f"     🌍 Filtered (country-specific, not remote): {job.get('title','?')[:50]} - {country}")
-            return False
-    
-    # Default: allow if remote or unclear
+    # Default: allow if unclear
     return True
 
 
 def is_fuzzy_duplicate(job: dict) -> bool:
-    """Check if a similar job was already seen"""
+    """Check if similar job was seen"""
     fingerprint = f"{job.get('title','').lower().strip()} {job.get('company','').lower().strip()}"
     for seen in _seen_fingerprints:
         ratio = SequenceMatcher(None, fingerprint, seen).ratio()
         if ratio >= 0.85:
-            print(f"     🔁 Fuzzy duplicate ({ratio:.0%} match): {job.get('title','?')}")
+            print(f"     🔁 Duplicate ({ratio:.0%}): {job.get('title','?')[:40]}")
             return True
     _seen_fingerprints.append(fingerprint)
     return False
 
 
 def is_too_old(job: dict) -> bool:
-    """Skip jobs older than MAX_JOB_AGE_DAYS"""
+    """Skip old jobs"""
     if MAX_JOB_AGE_DAYS == 0:
         return False
     from datetime import datetime
@@ -199,7 +254,6 @@ def is_too_old(job: dict) -> bool:
         now = datetime.now()
         age_days = (now - parsed).days
         if age_days > MAX_JOB_AGE_DAYS:
-            print(f"     📅 Filtered (too old, {age_days}d): {job.get('title','?')}")
             return True
     except Exception:
         pass
@@ -207,16 +261,14 @@ def is_too_old(job: dict) -> bool:
 
 
 def is_salary_too_low(job: dict) -> bool:
-    """Skip jobs with explicitly low salary"""
+    """Skip low salary jobs"""
     if MIN_SALARY_NGN == 0 and MIN_SALARY_USD == 0:
         return False
     salary_text = job.get("salary", "").lower()
     if not salary_text:
         return False
     
-    # Clean salary text
     salary_text = strip_html(salary_text)
-    
     numbers = re.findall(r"[\d,]+", salary_text.replace(",", ""))
     if not numbers:
         return False
@@ -224,17 +276,15 @@ def is_salary_too_low(job: dict) -> bool:
     
     if "₦" in salary_text or "ngn" in salary_text or "naira" in salary_text:
         if MIN_SALARY_NGN > 0 and amount < MIN_SALARY_NGN:
-            print(f"     💰 Filtered (salary too low ₦{amount:,}): {job.get('title','?')}")
             return True
     elif "$" in salary_text or "usd" in salary_text:
         if MIN_SALARY_USD > 0 and amount < MIN_SALARY_USD:
-            print(f"     💰 Filtered (salary too low ${amount:,}): {job.get('title','?')}")
             return True
     return False
 
 
 def get_quality_score(job: dict) -> int:
-    """Score job 1-5 based on completeness"""
+    """Score job 1-5"""
     score = 1
     if job.get("company") and job.get("company") != "Not specified":
         score += 0.5
@@ -252,36 +302,35 @@ def get_quality_score(job: dict) -> int:
 
 
 def is_priority(job: dict) -> bool:
-    """Check if job matches priority keywords"""
+    """Check priority match"""
     text = f"{job.get('title','')} {job.get('description','')}".lower()
     text = strip_html(text)
     return any(kw.lower() in text for kw in PRIORITY_KEYWORDS)
 
 
 def clean_job_data(job: dict) -> dict:
-    """Clean all text fields in the job"""
-    # Clean title
+    """Clean all job text fields"""
     if job.get('title'):
         job['title'] = strip_html(job['title'])
-        # Remove weird patterns
+        # Remove German flag from title
+        job['title'] = job['title'].replace('🇩🇪', '').strip()
         job['title'] = re.sub(r'\\/', '/', job['title'])
         job['title'] = job['title'].strip()
     
-    # Clean description
     if job.get('description'):
         job['description'] = strip_html(job['description'])
-        # Remove too short descriptions (like just "<p> </p>")
+        # Remove truncated HTML
+        if '<p' in job['description'] or '<div' in job['description']:
+            job['description'] = re.sub(r'<[^>]+>', ' ', job['description'])
         if len(job['description']) < 20:
-            job['description'] = "Click the 'Apply Now' button below for more details."
+            job['description'] = "Click 'Apply Now' below for details."
     
-    # Clean company
     if job.get('company'):
         job['company'] = strip_html(job['company'])
         job['company'] = re.sub(r'\\/', '/', job['company'])
         if not job['company'] or len(job['company']) < 2:
             job['company'] = "Not specified"
     
-    # Clean location
     if job.get('location'):
         job['location'] = clean_location(job['location'])
     
@@ -289,29 +338,31 @@ def clean_job_data(job: dict) -> dict:
 
 
 def is_halal(job: dict) -> bool:
-    """Master filter — returns True only if job passes ALL checks."""
+    """Master filter"""
     
-    # First clean all HTML and formatting
+    # Clean first
     job = clean_job_data(job)
     
-    # 1. Minimum description length check
+    # Check description length
     if MIN_DESCRIPTION_LENGTH > 0:
         if len(job.get("description", "")) < MIN_DESCRIPTION_LENGTH:
             return False
     
-    # 2. Too old check
+    # Check age
     if is_too_old(job):
+        print(f"     📅 Filtered (too old): {job.get('title','?')[:50]}")
         return False
     
-    # 3. Salary too low
+    # Check salary
     if is_salary_too_low(job):
+        print(f"     💰 Filtered (salary too low): {job.get('title','?')[:50]}")
         return False
     
-    # 4. Fuzzy duplicate check
+    # Check duplicates
     if is_fuzzy_duplicate(job):
         return False
     
-    # 5. Get text for keyword checks
+    # Get text for checks
     text = " ".join([
         job.get("title", ""),
         job.get("company", ""),
@@ -319,30 +370,30 @@ def is_halal(job: dict) -> bool:
         job.get("tags", ""),
     ]).lower()
     
-    # 6. Haram keywords check
+    # Haram check
     for keyword in HARAM_KEYWORDS:
         if keyword.lower() in text:
-            print(f"     🚫 Filtered (haram): '{keyword}' in: {job.get('title','?')[:50]}")
+            print(f"     🚫 Filtered (haram - {keyword}): {job.get('title','?')[:50]}")
             return False
     
-    # 7. Excluded titles check
+    # Excluded titles
     title_lower = job.get("title", "").lower()
     for keyword in EXCLUDE_TITLES:
         if keyword.lower() in title_lower:
             print(f"     🚷 Filtered (excluded): {job.get('title','?')[:50]}")
             return False
     
-    # 8. Nigeria-friendly check (includes location filtering)
+    # Nigeria-friendly check (includes location & German filtering)
     if not is_nigeria_friendly(job):
         return False
     
-    # 9. Must match at least one wanted role
+    # Must match wanted role
     combined = f"{title_lower} {job.get('description','').lower()} {job.get('tags','').lower()}"
     if not any(kw.lower() in combined for kw in INCLUDE_KEYWORDS):
-        print(f"     📋 Filtered (no matching role): {job.get('title','?')[:50]}")
+        print(f"     📋 Filtered (no role match): {job.get('title','?')[:50]}")
         return False
     
-    # 10. Add quality and priority scores
+    # Add quality and priority
     job["_quality"] = get_quality_score(job)
     job["_priority"] = is_priority(job)
     
