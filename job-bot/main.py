@@ -1,6 +1,6 @@
 """
 main.py — Entry point for Halal Jobs Bot
-UPDATED: Fixed import error + extracts actual job application links from Telegram
+UPDATED: Properly separates job description from application link
 """
 
 import json
@@ -51,13 +51,12 @@ from scrapers.telegram_channels import scrape_telegram_channels
 #from scrapers.doballi         import scrape_doballi
 #from scrapers.pangaea           import scrape_pangaea
 #from scrapers.relocate_me       import scrape_relocate_me
-#from scrapers.europeremote      import scrape_europeremote
 #from scrapers.remoters          import scrape_remoters (Not useful)
 #from scrapers.linkedin_rss    import scrape_linkedin_rss
 
 
 from filter import is_halal
-from sender import send_job, send_stats, send_health_alert  # Fixed import name
+from sender import send_job, send_stats, send_health_alert
 
 SEEN_JOBS_FILE = "seen_jobs.json"
 HEALTH_FILE    = "scraper_health.json"
@@ -92,32 +91,17 @@ def update_health(health: dict, name: str, success: bool) -> dict:
     return health
 
 
-def extract_external_job_links(message_text: str) -> list:
+def extract_external_job_links(text: str) -> list:
     """
-    Extract actual job application links from Telegram message.
-    Filters out Telegram internal links and returns only external job URLs.
+    Extract actual job application links from text.
+    Filters out Telegram internal links.
     """
     # Pattern to find all URLs
     url_pattern = r'https?://[^\s<>"\')\]]+'
-    all_links = re.findall(url_pattern, message_text)
+    all_links = re.findall(url_pattern, text)
     
     # Domains to filter out (Telegram internal)
-    telegram_domains = [
-        't.me', 'telegram.me', 'telegram.dog', 'telegra.ph',
-        't.me/', 'telegram.me/', 't.me/s/'
-    ]
-    
-    # Job site domains (prioritize these)
-    job_domains = [
-        'linkedin.com/jobs', 'indeed.com', 'glassdoor.com', 'monster.com',
-        'remoteok.com', 'weworkremotely.com', 'remotive.com', 'jobicy.com',
-        'workingnomads.com', 'flexjobs.com', 'upwork.com', 'freelancer.com',
-        'jobberman.com', 'myjobmag.com', 'ngcareers.com', 'jobgurus.com.ng',
-        'careers.', 'jobs.', 'apply.', 'hire.', 'recruitment.',
-        'forms.gle', 'docs.google.com/forms',
-        'airtable.com', 'typeform.com',
-        'bamboohr.com', 'greenhouse.io', 'lever.co', 'workable.com',
-    ]
+    telegram_domains = ['t.me', 'telegram.me', 'telegram.dog', 'telegra.ph']
     
     external_links = []
     
@@ -126,23 +110,9 @@ def extract_external_job_links(message_text: str) -> list:
         link = link.rstrip('.,!?;:)]')
         
         # Skip Telegram internal links
-        is_telegram = False
-        for tg_domain in telegram_domains:
-            if tg_domain in link.lower():
-                is_telegram = True
-                break
+        is_telegram = any(tg_domain in link.lower() for tg_domain in telegram_domains)
         
-        if is_telegram:
-            continue
-        
-        # Check if it's a job-related link
-        is_job_link = False
-        for job_domain in job_domains:
-            if job_domain.lower() in link.lower():
-                is_job_link = True
-                break
-        
-        if is_job_link or (not external_links and len(link) > 10):
+        if not is_telegram and link.startswith('http'):
             external_links.append(link)
     
     # Remove duplicates
@@ -156,45 +126,139 @@ def extract_external_job_links(message_text: str) -> list:
     return unique_links
 
 
+def extract_job_description(text: str, job_links: list) -> str:
+    """
+    Extract the actual job description by removing the job links from the text.
+    """
+    if not text:
+        return ""
+    
+    description = text
+    
+    # Remove all job links from the description
+    for link in job_links:
+        description = description.replace(link, '')
+    
+    # Remove any leftover Telegram group mentions
+    description = re.sub(r'@\w+', '', description)
+    
+    # Clean up excessive whitespace
+    description = re.sub(r'\n\s*\n', '\n\n', description)
+    description = re.sub(r' +', ' ', description)
+    description = description.strip()
+    
+    # Remove common prefixes
+    prefixes_to_remove = [
+        'Job posting:', 'Description:', 'Job description:',
+        'Apply here:', 'Link:', 'URL:', 'Click here:'
+    ]
+    for prefix in prefixes_to_remove:
+        if description.lower().startswith(prefix.lower()):
+            description = description[len(prefix):].strip()
+    
+    return description
+
+
+def extract_title_from_message(text: str) -> str:
+    """Extract a clean title from the message"""
+    lines = text.split('\n')
+    
+    # Look for the first meaningful line that's not a link or mention
+    for line in lines[:5]:
+        line = line.strip()
+        # Skip empty lines, links, and mentions
+        if line and not line.startswith('http') and not line.startswith('@'):
+            # Remove common prefixes
+            cleaned = re.sub(r'^(URGENTLY|WE\'RE|HIRING|VACANCY|JOB|POSITION)[:\s]+', '', line, flags=re.IGNORECASE)
+            cleaned = re.sub(r'@\w+', '', cleaned)
+            if cleaned and len(cleaned) > 5 and len(cleaned) < 150:
+                return cleaned.strip()
+    
+    return "Job Opportunity"
+
+
+def extract_company_from_message(text: str) -> str:
+    """Extract company name from message"""
+    # Look for common patterns
+    patterns = [
+        r'(?:at|@|company:?\s+)([A-Z][a-zA-Z0-9\s&]+?)(?:\s+[Ii]n|\s+[Ll]ocated|\||$|\.)',
+        r'(?:hiring|recruiting)[:\s]+(?:a[n]?\s+)?(?:[A-Z][a-z]+\s+)?([A-Z][a-zA-Z0-9\s&]+?)(?:\s+is|\s+are|\n)',
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            company = match.group(1).strip()
+            if len(company) < 50 and len(company) > 2:
+                return company
+    
+    # Check for via @mentions
+    mention_match = re.search(r'via\s+@(\w+)', text, re.IGNORECASE)
+    if mention_match:
+        return f"via @{mention_match.group(1)}"
+    
+    return "Not specified"
+
+
 def enhance_telegram_job(job: dict) -> dict:
     """
-    Enhance a Telegram job by extracting external links and better data
+    Enhance a Telegram job by properly separating:
+    - Job description (the actual details)
+    - Application link (the URL to apply)
     """
-    # Get message content
-    message_text = job.get('description', '') or job.get('title', '')
-    original_url = job.get('url', '')
+    # Get the raw message content
+    raw_text = job.get('description', '') or job.get('title', '')
     
-    # Extract external job links
-    external_links = extract_external_job_links(message_text)
+    if not raw_text:
+        return job
     
-    if external_links:
-        # Use the first external link as the job URL
-        job['url'] = external_links[0]
-        job['job_links'] = external_links
-        print(f"     🔗 Found external link: {external_links[0][:60]}...")
-    elif original_url and 't.me' not in original_url:
-        # Keep original URL if it's not a Telegram link
-        pass
-    else:
-        # No external link found - mark for skipping
-        job['_no_external_link'] = True
+    # Extract external job links (the actual application URLs)
+    job_links = extract_external_job_links(raw_text)
+    
+    # Extract the actual job description (remove links)
+    description = extract_job_description(raw_text, job_links)
+    
+    # Extract title and company
+    title = extract_title_from_message(raw_text)
+    company = extract_company_from_message(raw_text)
+    
+    # Enhance the job object
+    enhanced_job = {
+        'title': title,
+        'company': company,
+        'description': description,  # This is the actual job details text
+        'location': job.get('location', 'Remote'),
+        'salary': job.get('salary', ''),
+        'tags': job.get('tags', ''),
+        'source': f"Telegram: {job.get('source_group', 'Jobs Group')}",
+        'url': job_links[0] if job_links else None,  # The application link
+        'job_links': job_links,
+        'date_posted': job.get('date_posted', datetime.now().isoformat()),
+        'message_id': job.get('message_id'),
+        'source_group': job.get('source_group'),
+    }
+    
+    # Copy any existing fields we might have missed
+    for key, value in job.items():
+        if key not in enhanced_job and key not in ['_no_external_link']:
+            enhanced_job[key] = value
+    
+    # Check if we have an external link
+    if not job_links:
+        enhanced_job['_no_external_link'] = True
         print(f"     ⚠️ No external link found in message")
+    else:
+        print(f"     🔗 Found link: {job_links[0][:60]}...")
     
-    # Try to extract better title (remove @mentions)
-    title = job.get('title', '')
-    if title:
-        # Remove @username mentions
-        title = re.sub(r'@\w+', '', title)
-        # Remove common prefixes
-        for prefix in ['URGENTLY', 'WE\'RE', 'HIRING', 'VACANCY', 'JOB', 'POSITION']:
-            title = title.replace(prefix, '').strip(' !:')
-        job['title'] = title.strip() or 'Job Opportunity'
+    # Debug output
+    print(f"     📝 Title: {title[:50]}")
+    print(f"     📝 Description length: {len(description)} chars")
     
-    return job
+    return enhanced_job
 
 
 def enhanced_scrape_telegram():
-    """Wrapper for telegram scraper with link extraction"""
+    """Wrapper for telegram scraper with link extraction and description cleaning"""
     try:
         print(f"  📡 Scraping Telegram...")
         jobs = scrape_telegram_channels()
@@ -208,22 +272,34 @@ def enhanced_scrape_telegram():
         enhanced_jobs = []
         for job in jobs:
             enhanced = enhance_telegram_job(job)
-            enhanced_jobs.append(enhanced)
+            # Only keep jobs that have an external link AND meaningful description
+            if not enhanced.get('_no_external_link') and len(enhanced.get('description', '')) > 20:
+                enhanced_jobs.append(enhanced)
+            elif not enhanced.get('_no_external_link'):
+                print(f"     ⚠️ Skipping - description too short ({len(enhanced.get('description', ''))} chars)")
         
-        # Count jobs with external links
-        with_links = sum(1 for j in enhanced_jobs if not j.get('_no_external_link'))
-        print(f"     ✅ {with_links}/{len(enhanced_jobs)} have external job links")
+        print(f"     ✅ {len(enhanced_jobs)} valid jobs with external links and descriptions")
+        
+        # Show sample of first job
+        if enhanced_jobs:
+            sample = enhanced_jobs[0]
+            print(f"     📋 Sample:")
+            print(f"        Title: {sample.get('title', 'N/A')[:50]}")
+            print(f"        Link: {sample.get('url', 'N/A')[:60]}")
+            print(f"        Desc preview: {sample.get('description', '')[:80]}...")
         
         return enhanced_jobs
         
     except Exception as e:
         print(f"     ❌ Telegram FAILED: {e}")
+        import traceback
+        traceback.print_exc()
         return []
 
 
 def run():
     print(f"🚀 Halal Jobs Bot — {datetime.now().strftime('%d %b %Y %H:%M')} WAT")
-    print(f"📍 Extracting REAL job application links from Telegram\n")
+    print(f"📍 Extracting job descriptions and application links from Telegram\n")
 
     seen_jobs = set(load_json(SEEN_JOBS_FILE, []))
     health    = load_json(HEALTH_FILE, {})
@@ -232,44 +308,10 @@ def run():
     print(f"📦 Already seen: {len(seen_jobs)} jobs\n")
 
     scrapers = [
-         
-        #Working Update (kept for reference)
-        
-        #("WeWorkRemotely", scrape_weworkremotely),
-        #("Himalayas",      scrape_himalayas),
-        
-        # Global Remote
-        #("RemoteOK",       scrape_remoteok),
-        #("Remotive",       scrape_remotive),
-        #("TheMuse",        scrape_themuse),
-        #("WeWorkRemotely+",    scrape_wwr_enhanced),
-        #("WFH.io",             scrape_wfh_io),
-        
-        #("WorkingNomads",  scrape_workingnomads),
-        #("Braintrust",     scrape_braintrust),
-        #("Virtustant",     scrape_virtustant),
-        #("Jobicy",         scrape_jobicy),
-        
-        # Nigeria-specific
-        #("Jobberman",      scrape_jobberman),
-        #("MyJobMag",       scrape_myjobmag),
-        #("NGCareers",      scrape_ngcareers),
-        #("JobGurus",       scrape_jobgurus),
-        
-        # International / NGO / Africa
-        #("NGO / UN Jobs",  scrape_ngo_jobs),
-        #("Africa Jobs",    scrape_africa_jobs),
-        
         # Social Media - Using enhanced wrapper
-        ("Telegram",       enhanced_scrape_telegram),
+        ("Telegram", enhanced_scrape_telegram),
         
-        #SUSPENDED (kept for reference)
-        #("Pangaea",            scrape_pangaea),
-        #("RelocateMe",         scrape_relocate_me),
-        #("Remoters",           scrape_remoters),
-        #("LinkedIn RSS",   scrape_linkedin_rss),
-        #("EuropeRemote",       scrape_europeremote),
-        #("Doballi",        scrape_doballi),
+        # Other scrapers are commented out as before
     ]
 
     all_jobs      = []
@@ -283,19 +325,19 @@ def run():
             all_jobs.extend(jobs)
             source_counts[name] = count
             health = update_health(health, name, success=True)
-            time.sleep(0.5)  # Small delay between scrapers
+            time.sleep(0.5)
         except Exception as e:
             print(f"     ❌ {name} FAILED: {e}")
             health = update_health(health, name, success=False)
             source_counts[name] = 0
 
-    # Filter out jobs without external links
-    valid_jobs = [j for j in all_jobs if not j.get('_no_external_link')]
+    # Filter out jobs without external links or description
+    valid_jobs = [j for j in all_jobs if not j.get('_no_external_link') and j.get('url')]
     skipped_no_links = len(all_jobs) - len(valid_jobs)
     
     print(f"\n📋 Total collected: {len(all_jobs)}")
     print(f"   🔗 With external links: {len(valid_jobs)}")
-    print(f"   🚫 Skipped (no links): {skipped_no_links}")
+    print(f"   🚫 Skipped (no links/desc): {skipped_no_links}")
 
     new_count      = 0
     skipped_seen   = 0
@@ -303,12 +345,8 @@ def run():
     failed_send    = 0
 
     for job in valid_jobs:
-        # Create unique job ID based on URL or title
-        job_url = job.get('url', '')
-        if job_url:
-            job_id = f"{job_url}"
-        else:
-            job_id = f"{job.get('title','')}_{job.get('company','')}"
+        # Create unique job ID based on URL
+        job_id = f"{job.get('url', '')}"
         job_id = re.sub(r'[^a-zA-Z0-9_]', '_', job_id)[:200]
 
         if job_id in seen_jobs:
@@ -317,14 +355,16 @@ def run():
 
         if not is_halal(job):
             skipped_filter += 1
-            # Don't add filtered jobs to seen to allow re-scanning
             continue
 
         try:
-            send_job(job)
-            seen_jobs.add(job_id)
-            new_count += 1
-            time.sleep(0.5)  # Delay between sends to avoid rate limits
+            success = send_job(job)
+            if success:
+                seen_jobs.add(job_id)
+                new_count += 1
+            else:
+                failed_send += 1
+            time.sleep(0.5)
         except Exception as e:
             failed_send += 1
             print(f"     ⚠️ Failed to send: {e}")
