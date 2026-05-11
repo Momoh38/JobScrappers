@@ -24,7 +24,7 @@ TELEGRAM_JOB_CHANNELS = [
     #"WorkaNigeria",                    # Worka Nigeria - Web2 & Web3 jobs
     #"careermattersng",                  Careermatters NG - active recruitment platform (NOT ACTIVE)
     # Remote/worldwide job channels
-    "remotejobss",                     # Remote Jobs (English & Worldwide)
+    #"remotejobss",                     # Mostly RemoteOK Jobs (English & Worldwide)
 ]
 
 JOB_KEYWORDS = [
