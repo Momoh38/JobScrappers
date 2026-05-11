@@ -10,17 +10,17 @@ import time
 from datetime import datetime
 
 # --- Global Remote (API-based, most reliable) ---
-#from scrapers.remoteok        import scrape_remoteok
-#from scrapers.remotive        import scrape_remotive
-#from scrapers.themuse         import scrape_themuse
-#from scrapers.workingnomads   import scrape_workingnomads
-#from scrapers.braintrust      import scrape_braintrust
-#from scrapers.virtustant      import scrape_virtustant
-#from scrapers.jobicy          import scrape_jobicy
-#from scrapers.weworkremotely  import scrape_weworkremotely
-#from scrapers.we_work_remotely_enhanced import scrape_wwr_enhanced
-#from scrapers.wfh_io            import scrape_wfh_io
-#from scrapers.himalayas       import scrape_himalayas
+from scrapers.remoteok        import scrape_remoteok
+from scrapers.remotive        import scrape_remotive
+from scrapers.themuse         import scrape_themuse
+from scrapers.workingnomads   import scrape_workingnomads
+from scrapers.braintrust      import scrape_braintrust
+from scrapers.virtustant      import scrape_virtustant
+from scrapers.jobicy          import scrape_jobicy
+from scrapers.weworkremotely  import scrape_weworkremotely
+from scrapers.we_work_remotely_enhanced import scrape_wwr_enhanced
+from scrapers.wfh_io            import scrape_wfh_io
+from scrapers.himalayas       import scrape_himalayas
 
 
 # --- Nigeria-specific ---
