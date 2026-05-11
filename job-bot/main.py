@@ -13,7 +13,6 @@ from datetime import datetime
 #from scrapers.workingnomads   import scrape_workingnomads
 #from scrapers.braintrust      import scrape_braintrust
 #from scrapers.virtustant      import scrape_virtustant
-from scrapers.linkedin_rss    import scrape_linkedin_rss
 #from scrapers.jobicy          import scrape_jobicy       # replaces DailyRemote (403) TESTING
 #from scrapers.weworkremotely  import scrape_weworkremotely
 #from scrapers.we_work_remotely_enhanced import scrape_wwr_enhanced
@@ -32,7 +31,7 @@ from scrapers.linkedin_rss    import scrape_linkedin_rss
 #from scrapers.africa_jobs     import scrape_africa_jobs
 
 # --- Social Media ---
-#from scrapers.telegram_channels import scrape_telegram_channels
+from scrapers.telegram_channels import scrape_telegram_channels
 
 
 
@@ -53,6 +52,8 @@ from scrapers.linkedin_rss    import scrape_linkedin_rss
 #from scrapers.relocate_me       import scrape_relocate_me
 #from scrapers.europeremote      import scrape_europeremote
 #from scrapers.remoters          import scrape_remoters (Not useful)
+#from scrapers.linkedin_rss    import scrape_linkedin_rss
+
 
 from filter import is_halal
 from sender import send_job, send_stats, send_health_alert
@@ -145,7 +146,6 @@ def run():
         #("WorkingNomads",  scrape_workingnomads),
         #("Braintrust",     scrape_braintrust),
         #("Virtustant",     scrape_virtustant),
-        ("LinkedIn RSS",   scrape_linkedin_rss),
         #("Jobicy",         scrape_jobicy),
         
         # Nigeria-specific
@@ -160,14 +160,15 @@ def run():
         #("Africa Jobs",    scrape_africa_jobs),
         
         # Social Media
-        #("Telegram",       scrape_telegram_channels),
-        #("Doballi",        scrape_doballi),
-
+        ("Telegram",       scrape_telegram_channels),
+        
         #SUSPENDED
         #("Pangaea",            scrape_pangaea),           # Global remote jobs
         #("RelocateMe",         scrape_relocate_me),       # Visa sponsorship jobs
         #("Remoters",           scrape_remoters),          # Worldwide remote curated
+        #("LinkedIn RSS",   scrape_linkedin_rss),
         #("EuropeRemote",       scrape_europeremote),      # Europe timezone (good for Nigeria)
+        #("Doballi",        scrape_doballi),
 
     ]
 
