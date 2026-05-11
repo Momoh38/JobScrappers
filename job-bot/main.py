@@ -56,8 +56,7 @@ from scrapers.telegram_channels import scrape_telegram_channels
 
 
 from filter import is_halal
-from sender import send_job 
-#,send_stats, send_health_alert
+from sender import send_job, send_stats, send_health_alert
 
 SEEN_JOBS_FILE = "seen_jobs.json"
 HEALTH_FILE    = "scraper_health.json"
@@ -129,11 +128,9 @@ def run():
     print(f"📦 Already seen: {len(seen_jobs)} jobs\n")
 
     scrapers = [
-        #Testing
+         
+        #Working Update
         
-        
-        
-        #Wrking Update
         #("WeWorkRemotely", scrape_weworkremotely),
         #("Himalayas",      scrape_himalayas),
         
