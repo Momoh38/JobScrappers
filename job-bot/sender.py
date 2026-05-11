@@ -6,53 +6,13 @@ Features: quality stars, priority tag, inline Apply button, category headers,
 import os
 import requests
 import time
-
+import re
 from datetime import datetime
 
 # Rate limiting variables
 _last_message_time = 0
 MIN_MESSAGE_INTERVAL = 1.5  # 1.5 seconds between messages
 MAX_RETRIES = 3
-
-def send_with_retry(url, payload, retry_count=0):
-    """Send message with retry logic for rate limiting"""
-    global _last_message_time
-    
-    # Enforce minimum time between messages
-    current_time = time.time()
-    time_since_last = current_time - _last_message_time
-    
-    if time_since_last < MIN_MESSAGE_INTERVAL:
-        wait_time = MIN_MESSAGE_INTERVAL - time_since_last
-        time.sleep(wait_time)
-    
-    try:
-        response = requests.post(url, json=payload, timeout=10)
-        result = response.json()
-        
-        # Check for rate limit
-        if response.status_code == 429 or result.get('error_code') == 429:
-            retry_after = result.get('parameters', {}).get('retry_after', 5)
-            print(f"     ⏳ Rate limited, waiting {retry_after}s...")
-            time.sleep(retry_after + 1)
-            
-            if retry_count < MAX_RETRIES:
-                return send_with_retry(url, payload, retry_count + 1)
-            return False
-        
-        _last_message_time = time.time()
-        return result.get('ok', False)
-        
-    except Exception as e:
-        print(f"     ⚠️ Send error: {e}")
-        if retry_count < MAX_RETRIES:
-            time.sleep(5)
-            return send_with_retry(url, payload, retry_count + 1)
-        return False
-
-
-
-
 
 BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 CHANNEL_ID = os.environ.get("TELEGRAM_CHANNEL_ID")
@@ -69,20 +29,6 @@ CATEGORIES = {
         "customer support", "customer service", "customer success",
         "customer care", "client support", "help desk", "live chat",
         "chat support", "technical support", "Customer Service", "Virtual Assistance",
-        "Customer Service","Virtual Assistance", "Customer Support", "Email Support",
-        "Customer Experience", "Call Center Management", "Phone Support", "Jira",
-        "Customer Experience Management Software", "Leadership Training", 
-        "Customer Satisfaction","Multitasking", "Answered Ticket", "Interpersonal Skills",
-        "Ticketing System", "Online Chat Support", "Customer Service Training", "Retail & Consumer Goods",
-        "English", "US English Dialect", "Product Knowledge","Email Communication","Email Management Software",
-        "CRM System", "Helpdesk Platform", "Administrative Support", "CRM Software", "Data Entry", "Troubleshooting",
-        "Communication Skills", "Quality Assurance", "Analytics", "Software Debugging", "Tools", "Zendesk", "Slack",
-        "Chargebee", "Google Suite", "Zoom", "Sendgrid", "Amplitude", "Zoom Video Conferencing", "Communications", "Sales",
-        "Order Tracking", "Scheduling", "Calendar Management", "Microsoft Excel", "Microsoft Office", "Google Workspace","Monday.com",
-        "Intercom", "prop firm", "Forex Trading", "Communication Etiquette", "File Management", "Social Media Management"
-
-
-
     ],
     "🖊️ Writing & Content": [
         "writer", "copywriter", "editor", "proofreader", "content",
@@ -91,14 +37,6 @@ CATEGORIES = {
     "🗂️ Virtual & Admin": [
         "virtual assistant", "administrative", "admin", "data entry",
         "executive assistant", "personal assistant", "office assistant",
-        "Virtual Assistant", "Administrative Support", "Calendar Management",
-        "Scheduling", "File Management", "Travel Arrangements", "Meeting Coordination",
-        "Document Preparation", "Time Management", "Task Prioritization", "Project Coordination",
-        "Client Communication", "Project Management Tools", "Trello", "Asana", "Expense Reporting",
-        "Invoice Processing", "Social Media Management", "Content Scheduling", "Newsletter Management",
-        "Mailchimp", "Research", "Lead Generation", "Data Management", "Spreadsheet Management", "Google Sheets",
-        "Appointment Setting", "Reminder Follow-ups", "Confidentiality", "Attention to Detail", "Problem Solving",
-        "Organization", "Remote Support", "Executive Assistance", "Personal Assistant"
     ],
     "📊 Data & Analytics": [
         "data analyst", "data scientist", "business analyst",
@@ -128,6 +66,55 @@ CATEGORIES = {
 _sent_category_headers = set()
 
 
+def send_with_retry(url, payload, retry_count=0):
+    """Send message with retry logic for rate limiting"""
+    global _last_message_time
+    
+    # Enforce minimum time between messages
+    current_time = time.time()
+    time_since_last = current_time - _last_message_time
+    
+    if time_since_last < MIN_MESSAGE_INTERVAL:
+        wait_time = MIN_MESSAGE_INTERVAL - time_since_last
+        time.sleep(wait_time)
+    
+    try:
+        response = requests.post(url, json=payload, timeout=10)
+        
+        # Check for rate limit (429)
+        if response.status_code == 429:
+            error_data = response.json()
+            retry_after = error_data.get('parameters', {}).get('retry_after', 5)
+            print(f"     ⏳ Rate limited, waiting {retry_after}s...")
+            time.sleep(retry_after + 1)
+            
+            if retry_count < MAX_RETRIES:
+                return send_with_retry(url, payload, retry_count + 1)
+            return False
+        
+        result = response.json()
+        
+        if response.status_code == 200 and result.get('ok'):
+            _last_message_time = time.time()
+            return True
+        elif response.status_code == 400 and "can't parse entities" in str(result):
+            # Try without parse_mode
+            payload['parse_mode'] = None
+            response = requests.post(url, json=payload, timeout=10)
+            if response.status_code == 200:
+                _last_message_time = time.time()
+                return True
+        
+        return False
+        
+    except Exception as e:
+        print(f"     ⚠️ Send error: {e}")
+        if retry_count < MAX_RETRIES:
+            time.sleep(5)
+            return send_with_retry(url, payload, retry_count + 1)
+        return False
+
+
 def get_category(job: dict) -> str:
     title = job.get("title", "").lower()
     tags = job.get("tags", "").lower()
@@ -141,9 +128,11 @@ def get_category(job: dict) -> str:
 def escape(text: str) -> str:
     if not text:
         return ""
-    for ch in ["*", "_", "`", "["]:
+    # Escape Markdown special characters
+    special_chars = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
+    for ch in special_chars:
         text = str(text).replace(ch, f"\\{ch}")
-    return str(text)
+    return str(text)[:500]  # Limit length
 
 
 def format_job(job: dict) -> str:
@@ -192,6 +181,12 @@ def format_job(job: dict) -> str:
 def send_job(job: dict):
     """Send a single job to Telegram with an inline Apply button."""
     url_link = job.get("url", "")
+    
+    # Don't send Telegram internal links
+    if url_link and ('t.me' in url_link or 'telegram.me' in url_link):
+        print(f"     ⚠️ Skipping Telegram internal link: {url_link[:50]}")
+        return False
+    
     message  = format_job(job)
     category = get_category(job)
 
@@ -201,43 +196,45 @@ def send_job(job: dict):
         _sent_category_headers.add(category)
         time.sleep(0.5)
 
-    # Build payload — with inline Apply button if we have a URL
+    # Build payload with inline Apply button if we have a valid URL
     payload = {
         "chat_id": CHANNEL_ID,
         "text": message,
         "parse_mode": "Markdown",
-        "disable_web_page_preview": True,
+        "disable_web_page_preview": False,  # Allow preview to show link domain
     }
 
-    if url_link and url_link.startswith("http"):
+    if url_link and url_link.startswith("http") and 't.me' not in url_link:
         payload["reply_markup"] = {
             "inline_keyboard": [[
                 {"text": "🔗 Apply Now", "url": url_link}
             ]]
         }
 
-    response = requests.post(f"{BASE_URL}/sendMessage", json=payload, timeout=10)
-    if response.status_code != 200:
-        print(f"     ⚠️ Telegram error: {response.text}")
-    else:
+    success = send_with_retry(f"{BASE_URL}/sendMessage", payload)
+    
+    if success:
         priority_flag = " 🔴" if job.get("_priority") else ""
-        print(f"     ✅ Sent{priority_flag}: {job.get('title','?')} @ {job.get('company','?')}")
-
-    time.sleep(1)
+        print(f"     ✅ Sent{priority_flag}: {job.get('title','?')[:50]}...")
+        print(f"     🔗 Link: {url_link[:80]}...")
+        return True
+    else:
+        print(f"     ❌ Failed to send: {job.get('title','?')}")
+        return False
 
 
 def send_stats(stats: dict):
     """Send a run summary message to the channel."""
-    from datetime import datetime
     now = datetime.now().strftime("%d %b %Y, %I:%M %p")
 
     lines = [
-#        f"📊 *Bot Run Summary*",
-#        f"🕐 {now} WAT\n",
-#        f"📨 New jobs sent:     *{stats.get('sent', 0)}*",
-#        f"🚫 Filtered out:      *{stats.get('filtered', 0)}*",
-#        f"👁️ Already seen:      *{stats.get('seen', 0)}*",
-#        f"📡 Sources scraped:   *{stats.get('sources', 0)}*",
+        f"📊 *Bot Run Summary*",
+        f"🕐 {now} WAT\n",
+        f"📨 New jobs sent:     *{stats.get('sent', 0)}*",
+        f"🚫 Filtered out:      *{stats.get('filtered', 0)}*",
+        f"👁️ Already seen:      *{stats.get('seen', 0)}*",
+        f"🔗 No external links: *{stats.get('no_links', 0)}*",
+        f"📡 Sources scraped:   *{stats.get('sources', 0)}*",
     ]
 
     breakdowns = stats.get("source_counts", {})
@@ -261,6 +258,11 @@ def send_health_alert(scraper_name: str, consecutive_failures: int):
     _send_text(msg)
 
 
+def send_alert(scraper_name: str, consecutive_failures: int):
+    """Alias for send_health_alert for compatibility"""
+    send_health_alert(scraper_name, consecutive_failures)
+
+
 def _send_text(text: str):
     """Send a plain formatted text message."""
     payload = {
@@ -269,5 +271,8 @@ def _send_text(text: str):
         "parse_mode": "Markdown",
         "disable_web_page_preview": True,
     }
-    requests.post(f"{BASE_URL}/sendMessage", json=payload, timeout=10)
-    time.sleep(0.5)
+    try:
+        requests.post(f"{BASE_URL}/sendMessage", json=payload, timeout=10)
+        time.sleep(0.5)
+    except Exception as e:
+        print(f"     ⚠️ Failed to send text: {e}")
