@@ -289,15 +289,8 @@ def enhanced_scrape_telegram():
 
 def run():
     print(f"🚀 Job Scraper Bot — {datetime.now().strftime('%d %b %Y %H:%M')} WAT")
-    print(f"📍 Scanning {len(scrapers)} job sources\n")
-
-    seen_jobs = set(load_json(SEEN_JOBS_FILE, []))
-    health    = load_json(HEALTH_FILE, {})
-    history   = load_json(STATS_FILE, [])
-
-    print(f"📦 Already seen: {len(seen_jobs)} jobs\n")
-
-    # ALL SCRAPERS ENABLED (17 sources)
+    
+    # DEFINE SCRAPERS FIRST (before using it)
     scrapers = [
         # Global Remote
         ("RemoteOK",            scrape_remoteok),
@@ -325,6 +318,14 @@ def run():
         # Social Media (Enhanced)
         ("Telegram",            enhanced_scrape_telegram),
     ]
+    
+    print(f"📍 Scanning {len(scrapers)} job sources\n")
+
+    seen_jobs = set(load_json(SEEN_JOBS_FILE, []))
+    health    = load_json(HEALTH_FILE, {})
+    history   = load_json(STATS_FILE, [])
+
+    print(f"📦 Already seen: {len(seen_jobs)} jobs\n")
 
     all_jobs      = []
     source_counts = {}
