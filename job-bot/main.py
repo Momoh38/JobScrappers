@@ -1,6 +1,6 @@
 """
-main.py — Entry point for Halal Jobs Bot
-UPDATED: Jobicy removed (poor filtering), all other sources enabled
+main.py — Entry point for Job Scraper Bot
+UPDATED: All job sources enabled, monthly stats only
 """
 
 import json
@@ -16,7 +16,7 @@ from scrapers.themuse         import scrape_themuse
 from scrapers.workingnomads   import scrape_workingnomads
 from scrapers.braintrust      import scrape_braintrust
 from scrapers.virtustant      import scrape_virtustant
-# from scrapers.jobicy          import scrape_jobicy  # REMOVED - poor filtering, showing Chinese jobs
+# from scrapers.jobicy          import scrape_jobicy  # REMOVED - poor filtering
 from scrapers.weworkremotely  import scrape_weworkremotely
 from scrapers.we_work_remotely_enhanced import scrape_wwr_enhanced
 from scrapers.wfh_io            import scrape_wfh_io
@@ -288,8 +288,8 @@ def enhanced_scrape_telegram():
 
 
 def run():
-    print(f"🚀 Halal Jobs Bot — {datetime.now().strftime('%d %b %Y %H:%M')} WAT")
-    print(f"📍 Testing ALL job sources with updated formatting\n")
+    print(f"🚀 Job Scraper Bot — {datetime.now().strftime('%d %b %Y %H:%M')} WAT")
+    print(f"📍 Scanning {len(scrapers)} job sources\n")
 
     seen_jobs = set(load_json(SEEN_JOBS_FILE, []))
     health    = load_json(HEALTH_FILE, {})
@@ -297,7 +297,7 @@ def run():
 
     print(f"📦 Already seen: {len(seen_jobs)} jobs\n")
 
-    # ALL SCRAPERS ENABLED (except Jobicy)
+    # ALL SCRAPERS ENABLED (17 sources)
     scrapers = [
         # Global Remote
         ("RemoteOK",            scrape_remoteok),
@@ -306,7 +306,7 @@ def run():
         ("WorkingNomads",       scrape_workingnomads),
         ("Braintrust",          scrape_braintrust),
         ("Virtustant",          scrape_virtustant),
-        # ("Jobicy",              scrape_jobicy),  # REMOVED - Chinese jobs, poor filtering
+        # ("Jobicy",            scrape_jobicy),  # REMOVED
         ("WeWorkRemotely",      scrape_weworkremotely),
         ("WeWorkRemotely+",     scrape_wwr_enhanced),
         ("WFH.io",              scrape_wfh_io),
@@ -394,9 +394,8 @@ def run():
     history.append(stats)
     save_json(STATS_FILE, history[-500:])
 
-    current_hour = datetime.now().hour
-    if new_count > 0 or current_hour in [7, 13, 19]:
-        send_stats(stats)
+    # Send monthly stats (only on the 1st of each month)
+    send_stats(stats)
 
     print(f"\n✅ Done!")
     print(f"   📨 Sent:         {new_count}")
