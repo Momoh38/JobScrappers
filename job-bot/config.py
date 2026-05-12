@@ -1,6 +1,5 @@
 # =============================================================================
 # config.py — Your personal job preferences
-# Edit this file to control exactly what jobs you receive
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -127,6 +126,46 @@ NIGERIAN_STATES = [
     "Imo", "Jigawa", "Kaduna", "Kano", "Katsina", "Kebbi", "Kogi", "Kwara",
     "Lagos", "Nasarawa", "Niger", "Ogun", "Ondo", "Osun", "Oyo", "Plateau",
     "Rivers", "Sokoto", "Taraba", "Yobe", "Zamfara", "FCT", "Abuja",
+]
+
+# -----------------------------------------------------------------------------
+# RESTRICTED LOCATIONS — Jobs that require residence in these countries/regions
+# Jobs with these locations will be filtered out
+# -----------------------------------------------------------------------------
+
+RESTRICTED_LOCATIONS = [
+    # North America
+    "canada only", "usa only", "us only", "united states only",
+    "north america only", "must be based in us", "must reside in us",
+    "right to work in the us", "authorized to work in the united states",
+    "us citizen", "us citizenship required", "green card", "security clearance",
+    
+    # United Kingdom & Europe
+    "uk only", "united kingdom only", "eu only", "europe only",
+    "germany only", "france only", "italy only", "spain only", "portugal only",
+    "netherlands only", "belgium only", "switzerland only", "austria only",
+    "sweden only", "norway only", "denmark only", "finland only", "ireland only",
+    
+    # Australia & Oceania
+    "australia only", "oceania only", "new zealand only",
+    
+    # Africa (excluding Nigeria)
+    "south africa only", "africa only",
+    
+    # Middle East
+    "uae only", "saudi arabia only", "qatar only", "kuwait only",
+    "bahrain only", "oman only", "dubai only",
+    
+    # Asia
+    "asia only", "singapore only", "malaysia only", "japan only",
+    "south korea only", "china only", "india only",
+    
+    # South America
+    "brazil only", "south america only", "mexico only", "argentina only",
+    "chile only", "colombia only", "peru only",
+    
+    # Other
+    "antarctica only",
 ]
 
 # -----------------------------------------------------------------------------
