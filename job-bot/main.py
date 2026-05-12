@@ -1,6 +1,6 @@
 """
 main.py — Entry point for Job Scraper Bot
-UPDATED: All job sources enabled, monthly stats only
+UPDATED: Only FREE job sources (no paid applications)
 """
 
 import json
@@ -10,50 +10,51 @@ import time
 from datetime import datetime
 
 # --- Global Remote (API-based, most reliable) ---
-from scrapers.remoteok        import scrape_remoteok
-from scrapers.remotive        import scrape_remotive
-from scrapers.themuse         import scrape_themuse
-from scrapers.workingnomads   import scrape_workingnomads
-from scrapers.braintrust      import scrape_braintrust
-from scrapers.virtustant      import scrape_virtustant
-# from scrapers.jobicy          import scrape_jobicy  # REMOVED - poor filtering
-from scrapers.weworkremotely  import scrape_weworkremotely
-from scrapers.we_work_remotely_enhanced import scrape_wwr_enhanced
-from scrapers.wfh_io            import scrape_wfh_io
-from scrapers.himalayas       import scrape_himalayas
+from scrapers.remoteok        import scrape_remoteok       # ✅ FREE - Direct apply
+from scrapers.remotive        import scrape_remotive       # ✅ FREE - Direct apply
+from scrapers.themuse         import scrape_themuse        # ✅ FREE - Direct apply
+from scrapers.workingnomads   import scrape_workingnomads  # ✅ FREE - Direct apply
+from scrapers.braintrust      import scrape_braintrust     # ✅ FREE - Direct apply
+from scrapers.virtustant      import scrape_virtustant     # ✅ FREE - Direct apply
+from scrapers.wfh_io          import scrape_wfh_io         # ✅ FREE - Direct apply
+from scrapers.himalayas       import scrape_himalayas      # ✅ FREE - Direct apply
 
 
-# --- Nigeria-specific ---
-from scrapers.jobberman       import scrape_jobberman
-from scrapers.myjobmag        import scrape_myjobmag
-from scrapers.ngcareers       import scrape_ngcareers
-from scrapers.jobgurus        import scrape_jobgurus
+# --- Nigeria-specific - FREE ONLY ---
+from scrapers.jobberman       import scrape_jobberman      # ✅ FREE - Nigerian job board
+from scrapers.myjobmag        import scrape_myjobmag       # ✅ FREE - Nigerian job board
+from scrapers.ngcareers       import scrape_ngcareers      # ✅ FREE - Nigerian job board
+from scrapers.jobgurus        import scrape_jobgurus       # ✅ FREE - Nigerian job board
 
-# --- International / NGO / Africa ---
-from scrapers.ngo_jobs        import scrape_ngo_jobs
-from scrapers.africa_jobs     import scrape_africa_jobs
+# --- International/NGO /Africa 
+from scrapers.ngo_jobs        import scrape_ngo_jobs       # ✅ FREE - UN/ReliefWeb jobs
+from scrapers.africa_jobs     import scrape_africa_jobs    # ✅ FREE - African job boards
 
 # --- Social Media ---
-from scrapers.telegram_channels import scrape_telegram_channels
+from scrapers.telegram_channels import scrape_telegram_channels  # ✅ FREE - Public channels
 
 
-# --- Suspended (kept for reference, do not import) ---
-# from scrapers.indeed_ng     import scrape_indeed_ng    (403 Forbidden)
-# from scrapers.grabjobs      import scrape_grabjobs     (403 Forbidden)
-# from scrapers.jooble        import scrape_jooble       (403 - needs paid API key)
-# from scrapers.dailyremote   import scrape_dailyremote  (403 Forbidden)
-# from scrapers.twitter_jobs  import scrape_twitter_jobs (Nitter fully dead)
-# from scrapers.oneforma      import scrape_oneforma     (data annotation only)
-# from scrapers.startupjobs   import scrape_startupjobs  (low Nigeria relevance)
-# from scrapers.dynamitejobs  import scrape_dynamitejobs (abroad-focused)
-# from scrapers.freelance     import scrape_freelance    (optional freelance)
-# from scrapers.arbeitnow     import scrape_arbeitnow    (Germany-focused)
-# from scrapers.doballi        import scrape_doballi
-# from scrapers.pangaea        import scrape_pangaea
-# from scrapers.relocate_me    import scrape_relocate_me
-# from scrapers.remoters       import scrape_remoters
-# from scrapers.linkedin_rss   import scrape_linkedin_rss
-
+# --- SUSPENDED / REMOVED (Paid or not working) ---
+# from scrapers.indeed_ng        import scrape_indeed_ng     # ❌ 403 Forbidden
+# from scrapers.grabjobs         import scrape_grabjobs      # ❌ 403 Forbidden
+# from scrapers.jooble           import scrape_jooble        # ❌ Requires paid API key
+# from scrapers.dailyremote      import scrape_dailyremote   # ❌ 403 Forbidden
+# from scrapers.twitter_jobs     import scrape_twitter_jobs  # ❌ Nitter fully dead
+# from scrapers.oneforma         import scrape_oneforma      # ❌ Data annotation only
+# from scrapers.startupjobs      import scrape_startupjobs   # ❌ Low Nigeria relevance
+# from scrapers.dynamitejobs     import scrape_dynamitejobs  # ❌ Abroad-focused
+# from scrapers.freelance        import scrape_freelance     # ❌ Freelance platforms (can have scam jobs)
+# from scrapers.arbeitnow        import scrape_arbeitnow     # ❌ Germany-focused
+# from scrapers.weworkremotely   import scrape_weworkremotely # ❌ Requires payment to apply
+# from scrapers.we_work_remotely_enhanced import scrape_wwr_enhanced # ❌ Requires payment
+# from scrapers.doballi          import scrape_doballi       # ❌ Not working reliably
+# from scrapers.pangaea          import scrape_pangaea       # ❌ Requires payment for some features
+# from scrapers.relocate_me      import scrape_relocate_me   # ❌ Visa sponsorship only (not Nigeria)
+# from scrapers.remoters         import scrape_remoters      # ❌ Not useful for Nigeria
+# from scrapers.linkedin_rss     import scrape_linkedin_rss  # ❌ LinkedIn RSS deprecated
+# from scrapers.jobicy          import scrape_jobicy        # ❌ REMOVED - Chinese jobs, poor filtering
+# from scrapers.weworkremotely  import scrape_weworkremotely # ❌ REMOVED - Requires payment to apply
+# from scrapers.we_work_remotely_enhanced import scrape_wwr_enhanced # ❌ REMOVED - Same as above
 
 from filter import is_halal
 from sender import send_job, send_stats, send_health_alert
@@ -289,37 +290,35 @@ def enhanced_scrape_telegram():
 
 def run():
     print(f"🚀 Job Scraper Bot — {datetime.now().strftime('%d %b %Y %H:%M')} WAT")
+    print(f"✅ Using ONLY FREE job sources (no payment required to apply)\n")
     
-    # DEFINE SCRAPERS FIRST (before using it)
+    # DEFINE SCRAPERS - ONLY FREE SOURCES
     scrapers = [
-        # Global Remote
+        # Global Remote - FREE
         ("RemoteOK",            scrape_remoteok),
         ("Remotive",            scrape_remotive),
         ("TheMuse",             scrape_themuse),
         ("WorkingNomads",       scrape_workingnomads),
         ("Braintrust",          scrape_braintrust),
         ("Virtustant",          scrape_virtustant),
-        # ("Jobicy",            scrape_jobicy),  # REMOVED
-        ("WeWorkRemotely",      scrape_weworkremotely),
-        ("WeWorkRemotely+",     scrape_wwr_enhanced),
         ("WFH.io",              scrape_wfh_io),
         ("Himalayas",           scrape_himalayas),
         
-        # Nigeria-specific
+        # Nigeria-specific - FREE
         ("Jobberman",           scrape_jobberman),
         ("MyJobMag",            scrape_myjobmag),
         ("NGCareers",           scrape_ngcareers),
         ("JobGurus",            scrape_jobgurus),
         
-        # International / NGO / Africa
+        # International / NGO / Africa - FREE
         ("NGO / UN Jobs",       scrape_ngo_jobs),
         ("Africa Jobs",         scrape_africa_jobs),
         
-        # Social Media (Enhanced)
+        # Social Media - FREE
         ("Telegram",            enhanced_scrape_telegram),
     ]
     
-    print(f"📍 Scanning {len(scrapers)} job sources\n")
+    print(f"📍 Scanning {len(scrapers)} FREE job sources\n")
 
     seen_jobs = set(load_json(SEEN_JOBS_FILE, []))
     health    = load_json(HEALTH_FILE, {})
@@ -335,7 +334,7 @@ def run():
             print(f"  📡 Scraping {name}...")
             jobs = scraper()
             count = len(jobs)
-            print(f"     ✅ Found {count} jobs")
+            print(f"     ✅ Found {count} free jobs")
             all_jobs.extend(jobs)
             source_counts[name] = count
             health = update_health(health, name, success=True)
@@ -345,7 +344,7 @@ def run():
             health = update_health(health, name, success=False)
             source_counts[name] = 0
 
-    print(f"\n📋 Total collected: {len(all_jobs)}")
+    print(f"\n📋 Total free jobs collected: {len(all_jobs)}")
 
     new_count      = 0
     skipped_seen   = 0
@@ -403,6 +402,7 @@ def run():
     print(f"   🚫 Filtered:     {skipped_filter}")
     print(f"   👁️  Already seen: {skipped_seen}")
     print(f"   ❌ Failed:       {failed_send}")
+    print(f"\n💡 All jobs posted are from FREE sources - no payment required to apply!")
     
     print(f"\n📊 Scraper Health Summary:")
     working = []
