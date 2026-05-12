@@ -8,10 +8,10 @@ from difflib import SequenceMatcher
 from config import (
     INCLUDE_KEYWORDS, EXCLUDE_TITLES, PRIORITY_KEYWORDS,
     MIN_SALARY_NGN, MIN_SALARY_USD,
-    MAX_JOB_AGE_DAYS, MIN_DESCRIPTION_LENGTH, RESTRICTED_LOCATIONS
+    MAX_JOB_AGE_DAYS, MIN_DESCRIPTION_LENGTH
 )
 
-# Try to import RESTRICTED_LOCATIONS from config, if not defined, use default
+# Try to import RESTRICTED_LOCATIONS from config
 try:
     from config import RESTRICTED_LOCATIONS
 except ImportError:
@@ -55,26 +55,59 @@ _seen_fingerprints = []
 
 
 def strip_html(text: str) -> str:
-    """Clean HTML tags and fix formatting"""
+    """Aggressively clean HTML tags and fix formatting"""
     if not text:
         return ""
     
+    # Remove all HTML tags (anything between < and >)
     clean = re.sub(r'<[^>]+>', ' ', text)
     
+    # Remove Tailwind CSS classes and other style attributes
+    clean = re.sub(r'class="[^"]*"', '', clean)
+    clean = re.sub(r'style="[^"]*"', '', clean)
+    clean = re.sub(r'data-[^=]*="[^"]*"', '', clean)
+    
+    # Remove CSS style blocks
+    clean = re.sub(r'<style[^>]*>.*?</style>', '', clean, flags=re.DOTALL)
+    clean = re.sub(r'<script[^>]*>.*?</script>', '', clean, flags=re.DOTALL)
+    
+    # Fix HTML entities
     entities = {
         "&nbsp;": " ", "&amp;": "&", "&lt;": "<", "&gt;": ">",
         "&quot;": '"', "&#39;": "'", "&rsquo;": "'", "&lsquo;": "'",
         "&rdquo;": '"', "&ldquo;": '"', "&mdash;": "—", "&ndash;": "–",
         "&amp;#39;": "'", "&#x27;": "'", "&apos;": "'",
         "â¢": "•", "â": "–", "â": "—", "â": "'", "â": '"', "â": '"',
+        "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"',
+        "&#34;": '"', "&#38;": "&", "&#39;": "'", "&#40;": "(", "&#41;": ")",
+        "&#60;": "<", "&#62;": ">", "&#91;": "[", "&#93;": "]",
     }
     for entity, replacement in entities.items():
         clean = clean.replace(entity, replacement)
     
+    # Remove escaped slashes
     clean = clean.replace('\\/', '/')
     clean = clean.replace('\\', '')
+    
+    # Remove Tailwind-specific patterns
+    clean = re.sub(r'tw-[a-zA-Z0-9-]+', '', clean)
+    clean = re.sub(r'figma-[a-zA-Z0-9-]+', '', clean)
+    
+    # Fix comma-separated single letters (like "o, p, e, r, a, t, i, o, n, s")
+    clean = re.sub(r'\b([a-z]),\s+([a-z]),\s+([a-z]),\s+([a-z])', r'\1\2\3\4', clean)
+    clean = re.sub(r',\s+([a-z])', r' \1', clean)
+    
+    # Remove multiple spaces and clean up
     clean = re.sub(r'\s+', ' ', clean)
     clean = clean.strip()
+    
+    # If result is just a short fragment or empty, return a placeholder
+    if not clean or len(clean) < 20:
+        return "Click the 'Apply Now' button below for more details."
+    
+    # Try to extract meaningful text (first 100 chars)
+    if len(clean) > 800:
+        clean = clean[:800] + "..."
     
     return clean
 
@@ -274,15 +307,19 @@ def is_priority(job: dict) -> bool:
 
 
 def clean_job_data(job: dict) -> dict:
-    """Clean all job text fields"""
+    """Clean all job text fields aggressively"""
     if job.get('title'):
         job['title'] = strip_html(job['title'])
         job['title'] = job['title'].replace('🇩🇪', '').replace('🇨🇳', '').strip()
+        # Remove "US" from title if present
+        job['title'] = re.sub(r'\s*[-–]\s*US$', '', job['title'])
+        job['title'] = re.sub(r'\s*[-–]\s*USA$', '', job['title'])
     
     if job.get('description'):
         job['description'] = strip_html(job['description'])
-        if len(job['description']) < 20:
-            job['description'] = "Click 'Apply Now' below for details."
+        # If description is still mostly HTML or garbage, use placeholder
+        if not job['description'] or len(job['description']) < 20:
+            job['description'] = "Click the 'Apply Now' button below for more details."
     
     if job.get('company'):
         job['company'] = strip_html(job['company'])
