@@ -9,88 +9,78 @@
 # -----------------------------------------------------------------------------
 
 INCLUDE_KEYWORDS = [
-    # Virtual & Admin
-    "virtual assistant", "executive assistant", "personal assistant",
-    "administrative assistant", "admin assistant", "office assistant",
-    "data entry", "data entry clerk", "data entry operator", "Virtual Assistant", 
-    "Administrative Support", "Calendar Management", "Scheduling", "File Management",
-    "Travel Arrangements", "Meeting Coordination", "Document Preparation", "Time Management",
-    "Task Prioritization", "Project Coordination", "Client Communication", "Project Management Tools",
-    "Trello", "Asana", "Expense Reporting", "Invoice Processing", "Social Media Management", "Content Scheduling",
-    "Newsletter Management", "Mailchimp", "Research", "Lead Generation", "Data Management", "Spreadsheet Management",
-    "Google Sheets", "Appointment Setting", "Reminder Follow-ups", "Confidentiality", "Attention to Detail", "Problem Solving",
-    "Organization", "Remote Support", "Executive Assistance", "Personal Assistant"
-
-    # Customer Support
-    "customer support", "customer service", "customer success",
-    "customer care", "client support", "client success",
-    "help desk", "technical support", "support agent",
-    "support specialist", "live chat agent", "chat support",
-    "Customer Service", "Virtual Assistance", "Customer Support",
-    "Email Support", "Customer Experience", "Call Center Management",
-    "Phone Support", "Customer Experience Management Software",
-    "Leadership Training", "Jira", "Customer Satisfaction",
-    "Multitasking", "Answered Ticket", "Interpersonal Skills",
+    # Customer Support & Service (Group 1)
+    "Customer Service", "Virtual Assistance", "Customer Support", "Email Support",
+    "Customer Experience", "Call Center Management", "Phone Support",
+    "Customer Experience Management Software", "Leadership Training", "Jira",
+    "Customer Satisfaction", "Multitasking", "Answered Ticket", "Interpersonal Skills",
     "Ticketing System", "Online Chat Support", "KPI Metric Development",
     "Customer Service Training", "Retail & Consumer Goods", "English",
     "US English Dialect", "Product Knowledge", "Email Communication",
     "Email Management Software", "CRM System", "Helpdesk Platform",
-    "Administrative Support", "CRM Software", "Data Entry",
-    "Troubleshooting", "Communication Skills", "Quality Assurance",
-    "Analytics", "Software Debugging", "Tools", "Zendesk", "Slack",
-    "Chargebee", "Google Suite", "Zoom", "Sendgrid", "Amplitude",
-    "Zoom Video Conferencing", "Communications", "Sales",
-    "Order Tracking", "Scheduling", "Calendar Management",
-    "Microsoft Excel", "Microsoft Office", "Google Workspace",
-    "Canva", "Monday.com", "Intercom", "prop firm", "Forex Trading",
-    "Communication Etiquette", "File Management", "Social Media Management"
-
+    "Administrative Support", "CRM Software", "Data Entry", "Troubleshooting",
+    "Communication Skills", "Quality Assurance", "Analytics", "Software Debugging",
+    "Tools", "Zendesk", "Slack", "Chargebee", "Google Suite", "Zoom", "Sendgrid",
+    "Amplitude", "Zoom Video Conferencing", "Communications", "Sales",
+    "Order Tracking", "Scheduling", "Calendar Management", "Microsoft Excel",
+    "Microsoft Office", "Google Workspace", "Canva", "Monday.com", "Intercom",
+    "prop firm", "Forex Trading", "Communication Etiquette", "File Management",
+    "Social Media Management",
+    
+    # Virtual Assistance & Admin (Group 2)
+    "Virtual Assistant", "Administrative Support", "Calendar Management",
+    "Scheduling", "File Management", "Travel Arrangements", "Meeting Coordination",
+    "Document Preparation", "Time Management", "Task Prioritization",
+    "Project Coordination", "Client Communication", "Project Management Tools",
+    "Trello", "Asana", "Expense Reporting", "Invoice Processing",
+    "Social Media Management", "Content Scheduling", "Newsletter Management",
+    "Mailchimp", "Research", "Lead Generation", "Data Management",
+    "Spreadsheet Management", "Google Sheets", "Appointment Setting",
+    "Reminder Follow-ups", "Confidentiality", "Attention to Detail",
+    "Problem Solving", "Organization", "Remote Support", "Executive Assistance",
+    "Personal Assistant",
+    
+    # Nigerian States (Group 3)
+    "Abia", "Adamawa", "Akwa Ibam", "Anambra", "Bauchi", "Bayelsa", "Benue",
+    "Borno", "Cross River", "Delta", "Ebonyi", "Edo", "Ekiti", "Enugu", "Gombe",
+    "Imo", "Jigawa", "Kaduna", "Kano", "Katsina", "Kebbi", "Kogi", "Kwara",
+    "Lagos", "Nasarawa", "Niger", "Ogun", "Ondo", "Osun", "Oyo", "Plateau",
+    "Rivers", "Sokoto", "Taraba", "Yobe", "Zamfara", "FCT", "Abuja",
+    
+    # Tech & Development
+    "developer", "engineer", "devops", "qa", "quality assurance",
+    "frontend", "backend", "fullstack", "full stack", "mobile", "flutter",
+    "react", "python", "javascript", "software", "web dev", "ui/ux",
+    "data scientist", "data analyst",
+    
     # Writing & Content
-    "content writer", "copywriter", "copy editor", "proofreader",
-    "technical writer", "blog writer", "article writer", "ghostwriter",
-    "social media manager", "social media specialist",
-    "content creator", "content strategist",
-
-    # Tech / Development
-    "software developer", "software engineer", "web developer",
-    "frontend developer", "backend developer", "full stack developer",
-    "fullstack developer", "mobile developer", "flutter developer",
-    "react developer", "python developer", "javascript developer",
-    "devops engineer", "qa engineer", "quality assurance",
-    "ui/ux designer", "ux designer", "ui designer",
-    "product designer", "graphic designer",
-
-    # Data & Analytics
-    "data analyst", "data scientist", "business analyst",
-    "data engineer", "research analyst", "market research",
-
+    "writer", "copywriter", "editor", "proofreader", "content",
+    "ghostwriter", "blogger", "journalist", "transcri",
+    
     # Finance & Accounting
-    "accountant", "bookkeeper", "finance officer",
-    "accounts officer", "financial analyst", "payroll officer",
-
+    "accountant", "bookkeeper", "finance", "payroll", "accounts",
+    
     # Marketing & Sales
-    "digital marketer", "digital marketing", "seo specialist",
-    "email marketer", "growth marketer", "sales representative",
-    "sales executive", "business development", "affiliate marketer",
-
+    "marketing", "seo", "sales", "growth", "affiliate",
+    "email market", "business development",
+    
     # Project & Operations
-    "project manager", "project coordinator", "operations manager",
-    "operations coordinator", "program manager", "scrum master",
-
+    "project manager", "operations", "program manager", "scrum",
+    "coordinator",
+    
     # HR & Recruitment
-    "hr officer", "human resources", "recruiter",
-    "talent acquisition", "people operations",
-
+    "hr", "human resources", "recruiter", "talent", "people ops",
+    
     # Teaching & Training
-    "online tutor", "elearning", "instructional designer",
-    "curriculum developer", "teacher", "trainer",
-
-    # Transcription & Translation
-    "transcriptionist", "transcription", "translator",
-    "interpreter", "subtitler",
-
+    "tutor", "teacher", "trainer", "elearning", "curriculum",
+    
     # General Remote
     "remote", "work from home", "telecommute", "freelance", "contract",
+    
+    # Generic terms to catch more jobs
+    "support", "assistant", "admin", "coordinator", 
+    "specialist", "representative", "analyst", "associate",
+    "officer", "executive", "manager", "supervisor",
 ]
 
 # -----------------------------------------------------------------------------
@@ -99,12 +89,22 @@ INCLUDE_KEYWORDS = [
 # -----------------------------------------------------------------------------
 
 PRIORITY_KEYWORDS = [
-    "virtual assistant",
-    "customer support",
-    "remote customer service",
-    "data entry",
-    "content writer",
-    "social media manager",
+    # Customer Support Priority
+    "customer support", "customer service", "customer success",
+    "remote customer service", "help desk", "technical support",
+    
+    # Virtual Assistant Priority
+    "virtual assistant", "executive assistant", "personal assistant",
+    "administrative assistant", "remote assistant",
+    
+    # Data Entry Priority
+    "data entry", "data entry clerk", "data entry operator",
+    
+    # Content Priority
+    "content writer", "copywriter", "social media manager",
+    
+    # Tech Priority
+    "remote developer", "remote engineer", "devops",
 ]
 
 # -----------------------------------------------------------------------------
@@ -113,12 +113,26 @@ PRIORITY_KEYWORDS = [
 
 EXCLUDE_TITLES = [
     "cdl driver", "truck driver", "warehouse", "factory worker",
+    "convent", "monastery", "pastor", "priest", "minister",
+    "alcohol", "bartender", "mixologist", "gambling", "casino",
+]
+
+# -----------------------------------------------------------------------------
+# NIGERIAN STATES — Used for location detection (kept for reference)
+# -----------------------------------------------------------------------------
+
+NIGERIAN_STATES = [
+    "Abia", "Adamawa", "Akwa Ibam", "Anambra", "Bauchi", "Bayelsa", "Benue",
+    "Borno", "Cross River", "Delta", "Ebonyi", "Edo", "Ekiti", "Enugu", "Gombe",
+    "Imo", "Jigawa", "Kaduna", "Kano", "Katsina", "Kebbi", "Kogi", "Kwara",
+    "Lagos", "Nasarawa", "Niger", "Ogun", "Ondo", "Osun", "Oyo", "Plateau",
+    "Rivers", "Sokoto", "Taraba", "Yobe", "Zamfara", "FCT", "Abuja",
 ]
 
 # -----------------------------------------------------------------------------
 # MINIMUM SALARY FILTER
 # Jobs that explicitly show a salary BELOW these thresholds are skipped
-# Set to 0 to disable. Amounts are monthly.
+# Set to 0 to disable.
 # -----------------------------------------------------------------------------
 
 MIN_SALARY_NGN = 0       # e.g. 80000 to skip jobs below ₦80,000/month
