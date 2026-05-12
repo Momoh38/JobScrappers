@@ -78,6 +78,34 @@ GOOD_LOCATIONS = [
 ]
 
 
+def load_json(path, default):
+    if os.path.exists(path):
+        with open(path, "r") as f:
+            try:
+                return json.load(f)
+            except Exception:
+                return default
+    return default
+
+
+def save_json(path, data):
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2)
+
+
+def update_health(health: dict, name: str, success: bool) -> dict:
+    if name not in health:
+        health[name] = {"failures": 0, "last_success": None}
+    if success:
+        health[name]["failures"] = 0
+        health[name]["last_success"] = datetime.now().isoformat()
+    else:
+        health[name]["failures"] += 1
+        if health[name]["failures"] == 3:
+            send_health_alert(name, 3)
+    return health
+
+
 def is_location_nigeria_friendly(location: str, title: str = "", description: str = "") -> bool:
     """Check if job location is accessible from Nigeria"""
     if not location:
@@ -113,7 +141,6 @@ def is_location_nigeria_friendly(location: str, title: str = "", description: st
 
 def clean_remotive_job(job: dict) -> dict:
     """Special handling for Remotive - remove messy descriptions"""
-    # Keep only the heading/title info
     description = job.get('description', '')
     if description:
         # Try to extract first meaningful paragraph
