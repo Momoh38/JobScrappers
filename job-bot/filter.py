@@ -93,7 +93,18 @@ def strip_html(text: str) -> str:
     clean = re.sub(r'tw-[a-zA-Z0-9-]+', '', clean)
     clean = re.sub(r'figma-[a-zA-Z0-9-]+', '', clean)
     
-    # Fix comma-separated single letters (like "o, p, e, r, a, t, i, o, n, s")
+    # Remove placeholder text that shouldn't be in title/location
+    placeholder_patterns = [
+        r'Click the \'Apply Now\' button below for more details\.',
+        r'Click the "Apply Now" button below for more details\.',
+        r'Click the Apply Now button below for more details\.',
+        r'Click \'Apply Now\' button below',
+        r'Click "Apply Now" button below',
+    ]
+    for pattern in placeholder_patterns:
+        clean = re.sub(pattern, '', clean, flags=re.IGNORECASE)
+    
+    # Fix comma-separated single letters
     clean = re.sub(r'\b([a-z]),\s+([a-z]),\s+([a-z]),\s+([a-z])', r'\1\2\3\4', clean)
     clean = re.sub(r',\s+([a-z])', r' \1', clean)
     
@@ -101,15 +112,113 @@ def strip_html(text: str) -> str:
     clean = re.sub(r'\s+', ' ', clean)
     clean = clean.strip()
     
-    # If result is just a short fragment or empty, return a placeholder
-    if not clean or len(clean) < 20:
-        return "Click the 'Apply Now' button below for more details."
-    
-    # Try to extract meaningful text (first 100 chars)
-    if len(clean) > 800:
-        clean = clean[:800] + "..."
-    
     return clean
+
+
+def extract_clean_title(job: dict) -> str:
+    """Extract or generate a clean title"""
+    title = job.get('title', '')
+    
+    if title and title not in [
+        "Click the 'Apply Now' button below for more details.",
+        "Click the Apply Now button below for more details.",
+        "New Job Opportunity", "Job Opportunity"
+    ]:
+        # Remove placeholder text from title
+        title = re.sub(r"Click the 'Apply Now' button below for more details\.?", '', title, flags=re.IGNORECASE)
+        title = re.sub(r"Click the Apply Now button below for more details\.?", '', title, flags=re.IGNORECASE)
+        title = title.strip()
+        if len(title) > 5 and len(title) < 200:
+            return title
+    
+    # Try to extract from description
+    description = job.get('description', '')
+    if description:
+        # Look for common title patterns in the first 200 chars
+        first_line = description.split('\n')[0][:150]
+        # Remove common prefixes
+        cleaned = re.sub(r'^(Job Title:|Position:|Role:|Hiring:|URGENTLY|WE\'RE|HIRING)[:\s]+', '', first_line, flags=re.IGNORECASE)
+        cleaned = cleaned.strip()
+        if len(cleaned) > 5 and len(cleaned) < 150:
+            return cleaned
+    
+    return "Job Opportunity"
+
+
+def extract_clean_company(job: dict) -> str:
+    """Extract or generate a clean company name"""
+    company = job.get('company', '')
+    
+    # Check if company is placeholder text
+    placeholder_patterns = [
+        "Click the 'Apply Now' button below for more details",
+        "Click the Apply Now button below for more details",
+        "Not specified"
+    ]
+    
+    if company and company not in placeholder_patterns:
+        # Clean the company name
+        company = re.sub(r"Click the 'Apply Now' button below for more details\.?", '', company, flags=re.IGNORECASE)
+        company = company.strip()
+        if len(company) > 2 and len(company) < 100:
+            return company
+    
+    # Try to extract from description
+    description = job.get('description', '')
+    if description:
+        # Look for company patterns
+        patterns = [
+            r'(?:at|@|company:?\s+)([A-Z][a-zA-Z0-9\s&]+?)(?:\s+[Ii]n|\s+[Ll]ocated|\||$|\.|\,)',
+            r'(?:for|joining)\s+([A-Z][a-zA-Z0-9\s&]+?)(?:\s+is|\s+are|\n)',
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, description[:500], re.IGNORECASE)
+            if match:
+                company = match.group(1).strip()
+                if len(company) > 2 and len(company) < 50:
+                    return company
+    
+    return "Not specified"
+
+
+def extract_clean_location(job: dict) -> str:
+    """Extract or generate a clean location"""
+    location = job.get('location', '')
+    
+    # Check if location is placeholder text
+    placeholder_patterns = [
+        "Click the 'Apply Now' button below for more details",
+        "Click the Apply Now button below for more details",
+        "Not specified", ""
+    ]
+    
+    if location and location not in placeholder_patterns:
+        # Clean the location
+        location = re.sub(r"Click the 'Apply Now' button below for more details\.?", '', location, flags=re.IGNORECASE)
+        location = location.strip()
+        if len(location) > 2 and len(location) < 100:
+            return location
+    
+    # Try to extract from description
+    description = job.get('description', '')
+    if description:
+        # Look for location patterns
+        patterns = [
+            r'(?:location|based|in|@)[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*(?:,\s*[A-Z]{2})?)',
+            r'(?:remote|onsite|hybrid|worldwide|global|anywhere)',
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, description[:500], re.IGNORECASE)
+            if match:
+                loc = match.group(0) if len(match.groups()) == 0 else match.group(1)
+                if 'remote' in loc.lower():
+                    return "Remote"
+                elif 'worldwide' in loc.lower() or 'global' in loc.lower() or 'anywhere' in loc.lower():
+                    return "Remote (Worldwide)"
+                elif len(loc) < 50:
+                    return loc.strip()
+    
+    return "Remote"
 
 
 def is_german_job(text: str) -> bool:
@@ -163,20 +272,6 @@ def is_location_restricted(location: str, description: str) -> bool:
             return True
     
     return False
-
-
-def clean_location(location: str) -> str:
-    """Clean and standardize location field"""
-    if not location:
-        return "Remote / Worldwide"
-    
-    location = strip_html(location)
-    location = re.sub(r'^Remote\s*[-–]\s*', '', location)
-    
-    if not location or len(location) < 2:
-        return "Remote / Worldwide"
-    
-    return location
 
 
 def is_nigeria_friendly(job: dict) -> bool:
@@ -308,26 +403,20 @@ def is_priority(job: dict) -> bool:
 
 def clean_job_data(job: dict) -> dict:
     """Clean all job text fields aggressively"""
-    if job.get('title'):
-        job['title'] = strip_html(job['title'])
-        job['title'] = job['title'].replace('🇩🇪', '').replace('🇨🇳', '').strip()
-        # Remove "US" from title if present
-        job['title'] = re.sub(r'\s*[-–]\s*US$', '', job['title'])
-        job['title'] = re.sub(r'\s*[-–]\s*USA$', '', job['title'])
+    # Extract clean title first
+    job['title'] = extract_clean_title(job)
     
+    # Extract clean company
+    job['company'] = extract_clean_company(job)
+    
+    # Extract clean location
+    job['location'] = extract_clean_location(job)
+    
+    # Clean description
     if job.get('description'):
         job['description'] = strip_html(job['description'])
-        # If description is still mostly HTML or garbage, use placeholder
         if not job['description'] or len(job['description']) < 20:
             job['description'] = "Click the 'Apply Now' button below for more details."
-    
-    if job.get('company'):
-        job['company'] = strip_html(job['company'])
-        if not job['company'] or len(job['company']) < 2:
-            job['company'] = "Not specified"
-    
-    if job.get('location'):
-        job['location'] = clean_location(job['location'])
     
     return job
 
