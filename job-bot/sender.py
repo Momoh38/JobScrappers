@@ -1,7 +1,8 @@
 """
 sender.py — Formats and sends job listings to Telegram.
-Updated: Better HTML cleaning, no slashes, cleaner output
+Updated: Monthly stats only (no after-run summaries)
 """
+
 import os
 import requests
 import time
@@ -23,34 +24,39 @@ CATEGORIES = {
         "developer", "engineer", "devops", "qa", "quality assurance",
         "frontend", "backend", "fullstack", "full stack", "mobile", "flutter",
         "react", "python", "javascript", "software", "web dev", "ui/ux", "data scientist",
+        "data analyst", "software engineer",
     ],
     "📞 Customer Support": [
         "customer support", "customer service", "customer success",
         "customer care", "client support", "help desk", "live chat",
-        "chat support", "technical support",
+        "chat support", "technical support", "virtual assistance",
+        "call center", "phone support", "email support",
     ],
     "🖊️ Writing & Content": [
         "writer", "copywriter", "editor", "proofreader", "content",
-        "ghostwriter", "blogger", "journalist",
+        "ghostwriter", "blogger", "journalist", "content writer",
     ],
     "🗂️ Virtual & Admin": [
         "virtual assistant", "administrative", "admin", "data entry",
         "executive assistant", "personal assistant", "office assistant",
+        "administrative assistant", "virtual assistance",
     ],
     "💰 Finance & Accounting": [
         "accountant", "bookkeeper", "finance", "payroll", "accounts",
+        "financial analyst",
     ],
     "📣 Marketing & Sales": [
         "marketing", "seo", "sales", "growth", "affiliate",
         "social media", "email market", "business development",
+        "digital marketing",
     ],
     "🏗️ Project & Operations": [
         "project manager", "operations", "program manager", "scrum",
-        "coordinator",
+        "coordinator", "project coordinator",
     ],
     "🌍 NGO & UN": [
         "un ", "ngo", "undp", "unicef", "who", "world bank", "united nations",
-        "non-profit", "nonprofit", "field assistant",
+        "non-profit", "nonprofit", "field assistant", "relief",
     ],
 }
 
@@ -115,11 +121,14 @@ def escape_markdown(text: str) -> str:
     """Escape markdown special characters"""
     if not text:
         return ""
-    # Only escape characters that actually cause issues
     text = str(text)
     text = text.replace('_', '\\_')
     text = text.replace('*', '\\*')
     text = text.replace('`', '\\`')
+    text = text.replace('[', '\\[')
+    text = text.replace(']', '\\]')
+    text = text.replace('(', '\\(')
+    text = text.replace(')', '\\)')
     return text
 
 
@@ -128,21 +137,15 @@ def clean_text(text: str, max_length: int = 800) -> str:
     if not text:
         return ""
     
-    # Remove HTML tags
     text = re.sub(r'<[^>]+>', ' ', text)
-    
-    # Fix common entities
     text = text.replace('&nbsp;', ' ')
     text = text.replace('&amp;', '&')
     text = text.replace('&lt;', '<')
     text = text.replace('&gt;', '>')
     text = text.replace('\\/', '/')
-    
-    # Clean up whitespace
     text = re.sub(r'\s+', ' ', text)
     text = text.strip()
     
-    # Truncate if too long
     if len(text) > max_length:
         text = text[:max_length].strip() + "..."
     
@@ -176,7 +179,7 @@ def format_job(job: dict) -> str:
     
     lines.append(f"✨ Quality: {stars}")
     
-    if description and description != "Click the 'Apply Now' button below for more details.":
+    if description and description != "Click the 'Apply Now' button below for more details about this position.":
         lines.append(f"\n📋 {escape_markdown(description)}")
     elif description:
         lines.append(f"\n📋 {description}")
@@ -191,12 +194,10 @@ def send_job(job: dict) -> bool:
     """Send job to Telegram"""
     url_link = job.get("url", "")
     
-    # Skip if no valid URL
     if not url_link or not url_link.startswith("http"):
         print(f"     ⚠️ No valid URL for job: {job.get('title', '?')[:50]}")
         return False
     
-    # Skip Telegram internal links
     if 't.me' in url_link or 'telegram.me' in url_link:
         print(f"     ⚠️ Skipping Telegram link")
         return False
@@ -204,13 +205,11 @@ def send_job(job: dict) -> bool:
     message = format_job(job)
     category = get_category(job)
     
-    # Send category header once
     if category not in _sent_category_headers:
         _send_text(f"\n{category}\n{'─' * 23}")
         _sent_category_headers.add(category)
         time.sleep(0.5)
     
-    # Build payload with apply button
     payload = {
         "chat_id": CHANNEL_ID,
         "text": message,
@@ -235,24 +234,64 @@ def send_job(job: dict) -> bool:
 
 
 def send_stats(stats: dict):
-    """Send summary stats"""
-    now = datetime.now().strftime("%d %b %Y, %I:%M %p")
+    """
+    Send run summary - DISABLED by default.
+    Only sends if it's the first day of the month (monthly report).
+    """
+    today = datetime.now()
+    
+    # Only send on the 1st day of each month
+    if today.day == 1:
+        send_monthly_report(stats)
+    else:
+        # Silent - no message sent
+        print(f"     📊 Stats recorded (no message sent - next monthly report on {today.replace(day=1).strftime('%B 1st')})")
+        pass
+
+
+def send_monthly_report(stats: dict):
+    """Send monthly summary report (first day of each month)"""
+    now = datetime.now()
+    last_month = now.strftime("%B %Y")
     
     lines = [
-        f"📊 *Bot Run Summary*",
-        f"🕐 {now} WAT\n",
-        f"📨 New jobs sent: *{stats.get('sent', 0)}*",
+        f"📊 *Monthly Job Report - {last_month}*",
+        f"🕐 Generated: {now.strftime('%d %b %Y, %I:%M %p')}\n",
+        f"📨 Jobs sent this month: *{stats.get('sent', 0)}*",
         f"🚫 Filtered out: *{stats.get('filtered', 0)}*",
         f"👁️ Already seen: *{stats.get('seen', 0)}*",
-        f"📡 Sources scraped: *{stats.get('sources', 0)}*",
+        f"📡 Active sources: *{stats.get('sources', 0)}*\n",
     ]
     
+    # Add top sources
+    breakdowns = stats.get("source_counts", {})
+    if breakdowns:
+        top = sorted(breakdowns.items(), key=lambda x: x[1], reverse=True)[:5]
+        lines.append("*Top sources this month:*")
+        for src, count in top:
+            if count > 0:
+                lines.append(f"  • {escape_markdown(src)}: {count} jobs")
+    
+    # Calculate next month
+    if now.month == 12:
+        next_month = f"January 1st, {now.year + 1}"
+    else:
+        next_month = f"{now.replace(day=1, month=now.month + 1).strftime('%B 1st, %Y')}"
+    
+    lines.append(f"\n_Next report: {next_month}_")
+    
     _send_text("\n".join(lines))
+    print(f"     📊 Monthly report sent for {last_month}")
 
 
 def send_health_alert(scraper_name: str, consecutive_failures: int):
-    """Send health alert"""
-    msg = f"⚠️ *Health Alert*\n`{scraper_name}` failed {consecutive_failures} times."
+    """Send health alert when a scraper fails repeatedly"""
+    msg = (
+        f"⚠️ *Health Alert*\n"
+        f"`{scraper_name}` has failed "
+        f"*{consecutive_failures}* runs in a row.\n"
+        f"It may need fixing."
+    )
     _send_text(msg)
 
 
