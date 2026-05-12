@@ -15,8 +15,8 @@ TELEGRAM_JOB_CHANNELS = [
     "jobnownigeria",                   # Jobnow Nigeria - verified daily vacancies
     "jobnetworkng",                    # Latest Jobs in Nigeria
     "JobsinNigeriadaily",              # Jobs in Nigeria Daily
-    "jobsnigeria001rekrutconsulting",  # Job Vacancies Nigeria
-    "illtip",                          # Job vacancies in nigeria  
+    #"jobsnigeria001rekrutconsulting",  # Job Vacancies Nigeria
+    #"illtip",                          # Job vacancies in nigeria  
     "techjobsworld",           # Lagos tech jobs
     "EllfexNaijaJobber"        # General Nigeria jobs
     "naijajobsportal",           
