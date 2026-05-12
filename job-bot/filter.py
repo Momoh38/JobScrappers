@@ -1,6 +1,6 @@
 """
 filter.py — Simplified filtering logic
-ONLY filters: location restrictions, German language, duplicates, old jobs
+ONLY filters: location restrictions, German/Chinese language, duplicates, old jobs
 """
 
 import re
@@ -8,29 +8,34 @@ from difflib import SequenceMatcher
 from config import (
     INCLUDE_KEYWORDS, EXCLUDE_TITLES, PRIORITY_KEYWORDS,
     MIN_SALARY_NGN, MIN_SALARY_USD,
-    MAX_JOB_AGE_DAYS, MIN_DESCRIPTION_LENGTH
+    MAX_JOB_AGE_DAYS, MIN_DESCRIPTION_LENGTH, RESTRICTED_LOCATIONS
 )
 
-# REMOVED: All haram, alcohol, adult content filters
-# Only keeping location and language restrictions
+# Try to import RESTRICTED_LOCATIONS from config, if not defined, use default
+try:
+    from config import RESTRICTED_LOCATIONS
+except ImportError:
+    RESTRICTED_LOCATIONS = [
+        "usa only", "us only", "united states only", "must be based in us",
+        "must reside in us", "north america only", "canada only",
+        "uk only", "eu only", "europe only", "germany only", "netherlands only",
+        "right to work in the us", "authorized to work in the united states",
+        "must be located in us", "physically located in the us",
+        "us citizen", "us citizenship required", "green card",
+        "security clearance", "nato clearance", "australian residents only",
+        "new zealand only", "romania", "romania only", "must be in romania",
+        "latin america only", "latam only", "brazil", "colombia", "philippines",
+        "americas", "europe", "asia", "oceania", "switzerland", "switzerland only",
+        "china", "china only", "shanghai", "france only", "italy only",
+        "spain only", "portugal only", "belgium only", "austria only",
+        "sweden only", "norway only", "denmark only", "finland only", "ireland only",
+        "south africa only", "uae only", "saudi arabia only", "qatar only",
+        "kuwait only", "bahrain only", "oman only", "singapore only",
+        "malaysia only", "japan only", "south korea only", "india only",
+        "mexico only", "argentina only", "chile only", "peru only",
+    ]
 
-# Countries/locations that are NOT accessible from Nigeria
-RESTRICTED_LOCATIONS = [
-    "usa only", "us only", "united states only", "must be based in us",
-    "must reside in us", "north america only", "canada only",
-    "uk only", "eu only", "europe only", "germany only", "netherlands only",
-    "right to work in the us", "authorized to work in the united states",
-    "must be located in us", "physically located in the us",
-    "us citizen", "us citizenship required", "green card",
-    "security clearance", "nato clearance",
-    "australian residents only", "new zealand only",
-    "romania", "romania only", "must be in romania",
-    "latin america only", "latam only", "brazil", "colombia", "philippines",
-    "americas", "europe", "asia", "oceania",
-    "switzerland", "switzerland only", "china", "china only", "shanghai",
-]
-
-# German language indicators (block these jobs)
+# German language indicators
 GERMAN_INDICATORS = [
     "🇩🇪", "german", "deutsch", "fließend", "muttersprache", "sprache",
     "german speaking", "german language", "auf deutsch", "die stelle",
@@ -38,7 +43,7 @@ GERMAN_INDICATORS = [
     "german required", "deutschkenntnisse", "muttersprachler",
 ]
 
-# Chinese language indicators (block these)
+# Chinese language indicators
 CHINESE_INDICATORS = [
     "china", "shanghai", "beijing", "中文", "普通话", "汉语",
     "说明", "指引", "职位", "工作地点",
