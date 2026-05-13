@@ -168,6 +168,11 @@ RESTRICTED_LOCATIONS = [
     "antarctica only",
 ]
 
+LINKEDIN_RSS_URLS = [
+    "https://www.linkedin.com/jobs/rss/view/all?keywords=remote&location=Nigeria",
+    "https://www.linkedin.com/jobs/rss/view/all?keywords=virtual+assistant&location=Worldwide",
+]
+
 # -----------------------------------------------------------------------------
 # MINIMUM SALARY FILTER
 # Jobs that explicitly show a salary BELOW these thresholds are skipped
