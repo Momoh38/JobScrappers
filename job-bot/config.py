@@ -8,6 +8,8 @@
 # -----------------------------------------------------------------------------
 
 INCLUDE_KEYWORDS = [
+    # This list is NO LONGER USED FOR FILTERING
+    # All jobs pass through automatically for public bot
     # Customer Support & Service (Group 1)
     "Customer Service", "Virtual Assistance", "Customer Support", "Email Support",
     "Customer Experience", "Call Center Management", "Phone Support",
