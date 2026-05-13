@@ -2,11 +2,6 @@
 
 > A fully automated job alert bot that scrapes **15+ platforms**, filters non-Nigeria-friendly listings, and delivers formatted jobs straight to your **Telegram channel** — every 30 minutes, completely free.
 
-![GitHub Actions](https://img.shields.io/badge/Powered%20by-GitHub%20Actions-2088FF?logo=github-actions&logoColor=white)
-![Telegram](https://img.shields.io/badge/Delivers%20to-Telegram-26A5E4?logo=telegram&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-green)
-![Cost](https://img.shields.io/badge/Cost-100%25%20Free-brightgreen)
-
 ---
 
 ## 📋 Table of Contents
