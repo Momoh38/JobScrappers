@@ -1,21 +1,21 @@
-# 🔍 Job Scraper Bot
+```markdown
+# 🔍 JobScrappers
 
-A fully automated job alert bot that scrapes **multiple job platforms** across the web and social media, filters out non-Nigeria friendly listings, enforces remote eligibility, and delivers each matching job as a formatted message directly to your private **Telegram channel** every 30 minutes, every day, completely free.
+A fully automated job alert bot that scrapes **15+ job platforms** across the web and social media, filters out non-Nigeria friendly listings, and delivers each matching job as a formatted message directly to your private **Telegram channel** every 30 minutes, every day, completely free.
 
 ---
 
 ## Table of Contents
 
 - [How It Works](#how-it-works)
+- [Features](#features)
 - [Project Structure](#project-structure)
-- [File-by-File Breakdown](#file-by-file-breakdown)
 - [Job Sources](#job-sources)
 - [Filter System](#filter-system)
 - [Customising Your Job Preferences](#customising-your-job-preferences)
 - [Installation & Setup](#installation--setup)
 - [Running the Bot](#running-the-bot)
-- [Resetting the Bot (Fresh Start)](#resetting-the-bot-fresh-start)
-- [Adding New Sources](#adding-new-sources)
+- [Resetting the Bot](#resetting-the-bot)
 - [Telegram Message Format](#telegram-message-format)
 - [Troubleshooting](#troubleshooting)
 - [Security Notes](#security-notes)
@@ -27,261 +27,113 @@ A fully automated job alert bot that scrapes **multiple job platforms** across t
 Every time the bot runs (every 30 minutes via GitHub Actions), it follows these steps:
 
 ```
-1. WAKE UP      — GitHub Actions triggers the script on schedule (every 30 minutes)
-2. SCRAPE       — All active scrapers run in sequence, collecting job listings
-3. DEDUPLICATE  — Jobs already sent before are skipped (seen_jobs.json)
-4. FILTER       — Each job passes through simplified filters (location, language, duplicates)
-5. SEND         — Passing jobs are formatted and delivered to Telegram one by one
-6. LOG          — Stats are saved and a summary is sent to your channel
-7. SLEEP        — Script finishes, GitHub goes back to sleep until next 30 minutes
+1. WAKE UP      — GitHub Actions triggers the script (every 30 minutes)
+2. SCRAPE       — 15+ scrapers run, collecting job listings
+3. DEDUPLICATE  — Jobs already sent are skipped
+4. FILTER       — Location & language filters applied
+5. SEND         — Jobs formatted and delivered to Telegram
+6. LOG          — Stats saved (monthly reports only)
+7. SLEEP        — Script finishes until next run
 ```
 
-**No server needed. No subscription. No maintenance.** Runs entirely on GitHub's free infrastructure.
+**No server needed. No subscription. Runs on GitHub's free infrastructure.**
+
+---
+
+## Features
+
+- ✅ **15+ Active Job Sources** — Nigerian job boards, global remote, NGO, Telegram groups
+- ✅ **Runs Every 30 Minutes** — Never miss a job opportunity
+- ✅ **Smart Filtering** — Filters out US-only, Europe-only, Asia, Israel jobs
+- ✅ **Telegram Integration** — Direct messages with clickable "Apply Now" buttons
+- ✅ **External Link Extraction** — Gets real job links from Telegram messages (not group links)
+- ✅ **Monthly Reports Only** — No spam, just one summary report on the 1st of each month
+- ✅ **Automatic Health Alerts** — Notifies you if any scraper fails
+- ✅ **Fully Customizable** — Edit `config.py` to match your job preferences
+- ✅ **Completely Free** — Runs on GitHub Actions free tier, all job sources are free to apply
 
 ---
 
 ## Project Structure
 
 ```
-job-scraper-bot/
+JobScarppers/
 │
 ├── README.md
-├── requirements.txt                  ← Python dependencies (root level)
+├── requirements.txt
 │
 ├── .github/
 │   └── workflows/
-│       └── run.yml                   ← GitHub Actions schedule (every 30 minutes)
+│       └── run.yml                   ← Runs every 30 minutes
 │
 └── job-bot/
-    ├── main.py                       ← Entry point — runs everything
-    ├── config.py                     ← Your personal job preferences
-    ├── filter.py                     ← All filtering logic (simplified)
-    ├── sender.py                     ← Formats and sends jobs to Telegram
-    ├── seen_jobs.json                ← Auto-generated duplicate tracker
-    ├── scraper_health.json           ← Auto-generated scraper health log
-    ├── run_stats.json                ← Auto-generated run history
-    ├── requirements.txt              ← Python dependencies (bot level)
+    ├── main.py                       ← Entry point
+    ├── config.py                     ← Your job preferences (EDIT THIS)
+    ├── filter.py                     ← Filtering logic
+    ├── sender.py                     ← Telegram formatter
+    ├── seen_jobs.json                ← Auto-generated
+    ├── scraper_health.json           ← Auto-generated
+    ├── run_stats.json                ← Auto-generated
+    ├── requirements.txt
     │
-    └── scrapers/
-        │
-        ├── — ACTIVE SCRAPERS (17 sources) —
-        │
-        │   # Global Remote Platforms
-        ├── remoteok.py               ← RemoteOK (free public API)
-        ├── remotive.py               ← Remotive (free public API)
-        ├── themuse.py                ← The Muse (free public API)
-        ├── weworkremotely.py         ← WeWorkRemotely (RSS feeds)
-        ├── we_work_remotely_enhanced.py ← Enhanced WWR with salary
-        ├── workingnomads.py          ← WorkingNomads (JSON API)
-        ├── braintrust.py             ← Braintrust (JSON API)
-        ├── virtustant.py             ← Virtustant (global hiring)
-        ├── wfh_io.py                 ← WFH.io (remote jobs)
-        ├── himalayas.py              ← Himalayas (remote job board)
-        │
-        │   # Nigeria-Specific Platforms
-        ├── jobberman.py              ← Jobberman Nigeria (HTML scraper)
-        ├── myjobmag.py               ← MyJobMag Nigeria (HTML scraper)
-        ├── ngcareers.py              ← NGCareers (HTML scraper)
-        ├── jobgurus.py               ← JobGurus Nigeria (HTML scraper)
-        │
-        │   # International / NGO / Africa
-        ├── ngo_jobs.py               ← ReliefWeb API + UN Jobs + Devex
-        ├── africa_jobs.py            ← Fuzu, Shortlist.io, AfricaWork
-        │
-        │   # Social Media
-        ├── telegram_channels.py      ← Nigerian job Telegram channels
-        │
-        └── — SUSPENDED / REMOVED —
-            ├── jobicy.py             ← REMOVED (Chinese jobs, poor filtering)
-            ├── indeed_ng.py          ← 403 Forbidden
-            ├── grabjobs.py           ← 403 Forbidden
-            ├── jooble.py             ← 403 - needs paid API key
-            ├── dailyremote.py        ← 403 Forbidden
-            ├── twitter_jobs.py       ← Nitter fully dead
-            ├── arbeitnow.py          ← Germany-focused
-            └── others...             ← See main.py for full list
+    └── scrapers/                     ← 15+ job source scrapers
+        ├── jobberman.py              ← Nigerian job board
+        ├── myjobmag.py               ← Nigerian job board
+        ├── ngcareers.py              ← Nigerian job board
+        ├── jobgurus.py               ← Nigerian job board
+        ├── ngo_jobs.py               ← UN/ReliefWeb jobs
+        ├── africa_jobs.py            ← African job boards
+        ├── remoteok.py               ← Global remote jobs
+        ├── remotive.py               ← Global remote jobs
+        ├── themuse.py                ← Global jobs
+        ├── workingnomads.py          ← Remote jobs
+        ├── braintrust.py             ← Freelance/remote
+        ├── himalayas.py              ← Remote jobs
+        ├── wfh_io.py                 ← Remote jobs
+        ├── virtustant.py             ← Global hiring
+        └── telegram_channels.py      ← Nigerian Telegram groups
 ```
 
 ---
 
-## File-by-File Breakdown
+## Job Sources (15 Active)
 
-### `main.py` — The Engine
-
-The entry point and coordinator. When run, it:
-
-- Loads `seen_jobs.json` to track already-sent jobs
-- Runs all 17 active scrapers in sequence
-- Passes each job through `filter.py`
-- Extracts real application links from Telegram messages (not group links)
-- Sends passing jobs to Telegram via `sender.py`
-- Tracks scraper health — alerts after 3 consecutive failures
-- Saves updated data (seen jobs, health stats, run history)
-- Sends run summary to your Telegram channel
-
-**Key Features:**
-- Removes links from job titles (clean formatting)
-- Extracts external job links from Telegram messages
-- Never skips jobs with valid links (even short descriptions)
-- Shows scraper health summary at the end of each run
-
----
-
-### `config.py` — Your Control Panel
-
-**This is the only file you need to edit for customisation.**
-
-```python
-# Roles you WANT to see (job must match at least one)
-INCLUDE_KEYWORDS = [
-    "virtual assistant", "customer support", "data entry",
-    "remote", "work from home", "admin", "writer", ...
-]
-
-# Jobs matching these get 🔴 PRIORITY tag
-PRIORITY_KEYWORDS = [
-    "virtual assistant", "customer support", "data entry", ...
-]
-
-# Block specific titles
-EXCLUDE_TITLES = ["cdl driver", "truck driver", "warehouse", ...]
-
-# Minimum salary filters (set to 0 to disable)
-MIN_SALARY_NGN = 0       # ₦
-MIN_SALARY_USD = 0       # $
-
-# Skip jobs older than this many days (0 = disabled)
-MAX_JOB_AGE_DAYS = 14
-
-# Minimum description length (0 = all jobs allowed)
-MIN_DESCRIPTION_LENGTH = 0
-```
-
----
-
-### `filter.py` — Simplified Filtering
-
-**Now simplified to focus only on what matters:**
-
-| Filter | What it does |
-|--------|---------------|
-| 🇩🇪 German Jobs | Blocks jobs with German language or flag |
-| 🇨🇳 Chinese Jobs | Blocks jobs with Chinese characters or location |
-| 🌍 Location Restricted | Blocks US-only, Europe-only, Brazil, Colombia, Philippines, etc. |
-| 📅 Age Filter | Skips jobs older than `MAX_JOB_AGE_DAYS` |
-| 💰 Salary Filter | Blocks jobs below minimum (if configured) |
-| 🔁 Duplicate Detection | Prevents same job appearing twice (85%+ match) |
-| 🚷 Excluded Titles | Blocks specific unwanted titles |
-| 📋 Role Match | Job must match `INCLUDE_KEYWORDS` |
-
-**REMOVED FILTERS (for more job opportunities):**
-- ❌ Haram keywords (alcohol, gambling, adult content)
-- ❌ Non-English filter (was blocking good English jobs)
-- ❌ Subscription sources
-
----
-
-### `sender.py` — Telegram Delivery
-
-Handles all Telegram messaging with:
-
-- **Rate limiting** — 1.5 seconds between messages, handles 429 errors
-- **Category grouping** — Jobs grouped under emoji headers (Tech, Support, Admin, etc.)
-- **Inline Apply button** — Direct link to job application
-- **Clean formatting** — No HTML tags, no escaped slashes, no random characters
-- **Priority tagging** — 🔴 flag for your most-wanted roles
-
-**Message Format:**
-```
-💼 Virtual Assistant at Company Name
-🏢 Company Name
-📍 Remote
-✨ Quality: ⭐⭐⭐⭐
-
-📋 Job description text goes here...
-
-_Source: RemoteOK_
-
-[🔗 Apply Now]  ← Clickable button
-```
-
----
-
-### `seen_jobs.json` — Duplicate Prevention
-
-Auto-created on first run. Stores unique IDs of every job ever sent. Jobs already in this file are skipped instantly. Delete the GitHub Actions cache to reset and start fresh.
-
----
-
-### `scraper_health.json` — Health Tracking
-
-Tracks consecutive failures per scraper. Sends alert after 3 failures so you know when a source needs fixing.
-
----
-
-### `run_stats.json` — Run History
-
-Stores last 500 runs with stats (jobs sent, filtered, seen, source breakdown).
-
----
-
-### `.github/workflows/run.yml` — The Scheduler
-
-```yaml
-on:
-  schedule:
-    - cron: "*/30 * * * *"   # Every 30 minutes
-  workflow_dispatch:          # Manual trigger
-```
-
-Triggers every 30 minutes, 24/7. Can also be triggered manually from Actions tab.
-
----
-
-## Job Sources (17 Active)
-
-### Global Remote (11 sources)
-| Scraper | Source | Stability |
-|---------|--------|-----------|
-| RemoteOK | RemoteOK API | ⭐⭐⭐⭐⭐ |
-| Remotive | Remotive API | ⭐⭐⭐⭐⭐ |
-| TheMuse | The Muse API | ⭐⭐⭐⭐ |
-| WeWorkRemotely | RSS feeds | ⭐⭐⭐⭐ |
-| WeWorkRemotely+ | Enhanced with salary | ⭐⭐⭐⭐ |
-| WorkingNomads | JSON API | ⭐⭐⭐⭐ |
-| Braintrust | JSON API | ⭐⭐⭐⭐ |
-| Virtustant | HTML scraper | ⭐⭐⭐ |
-| WFH.io | HTML scraper | ⭐⭐⭐ |
-| Himalayas | Free API | ⭐⭐⭐⭐ |
-
-### Nigeria-Specific (4 sources)
-| Scraper | Source | Stability |
-|---------|--------|-----------|
-| Jobberman | HTML scraper | ⭐⭐⭐ |
-| MyJobMag | HTML scraper | ⭐⭐⭐ |
-| NGCareers | HTML scraper | ⭐⭐⭐ |
-| JobGurus | HTML scraper | ⭐⭐⭐ |
+### Nigeria-Specific (4 sources) — MOST RELIABLE
+| Scraper | Source | Status |
+|---------|--------|--------|
+| Jobberman | Nigerian job board | ✅ Active |
+| MyJobMag | Nigerian job board | ✅ Active |
+| NGCareers | Nigerian job board | ✅ Active |
+| JobGurus | Nigerian job board | ✅ Active |
 
 ### International / NGO / Africa (2 sources)
-| Scraper | Source | Stability |
-|---------|--------|-----------|
-| NGO / UN Jobs | ReliefWeb API | ⭐⭐⭐⭐ |
-| Africa Jobs | HTML scraper | ⭐⭐⭐ |
+| Scraper | Source | Status |
+|---------|--------|--------|
+| NGO / UN Jobs | ReliefWeb API | ✅ Active |
+| Africa Jobs | African job boards | ✅ Active |
 
-### Social Media (1 source)
-| Scraper | Source | Notes |
-|---------|--------|-------|
-| Telegram | t.me preview | Enhanced with link extraction |
+### Global Remote (9 sources)
+| Scraper | Source | Status |
+|---------|--------|--------|
+| RemoteOK | RemoteOK API | ✅ Active |
+| Remotive | Remotive API | ✅ Active |
+| TheMuse | The Muse API | ✅ Active |
+| WorkingNomads | JSON API | ✅ Active |
+| Braintrust | JSON API | ✅ Active |
+| Himalayas | Free API | ✅ Active |
+| WFH.io | HTML scraper | ✅ Active |
+| Virtustant | HTML scraper | ✅ Active |
 
-**Telegram channels monitored:**
-- `@jbtoday` — Jobstoday Nigeria
-- `@jobnownigeria` — Jobnow Nigeria
-- `@careermattersng` — Careermatters NG
-- `@jobnetworkng` — Latest Jobs in Nigeria
-- `@JobsinNigeriadaily` — Jobs in Nigeria Daily
-- `@jobsnigeria001rekrutconsulting` — Job Vacancies Nigeria
-- `@WorkaNigeria` — Worka Nigeria
-- `@remotejobss` — Remote Jobs (Worldwide)
+### Social Media (1 source — 7 channels)
+| Channel | Status |
+|---------|--------|
+| @jbtoday | ✅ Active |
+| @jobnownigeria | ✅ Active |
+| @careermattersng | ✅ Active |
+| @jobnetworkng | ✅ Active |
+| @WorkaNigeria | ✅ Active |
+| @remotejobss | ✅ Active |
+| @techjobsworld | ✅ Active |
 
 ---
 
@@ -294,25 +146,25 @@ JOB FOUND
 [1] Clean HTML & formatting
     │
     ▼
-[2] Too old? ──YES──► REJECTED
+[2] Too old? (>14 days) ──YES──► REJECTED
     │ NO
     ▼
-[3] Salary too low? ──YES──► REJECTED
+[3] Salary too low? (if configured) ──YES──► REJECTED
     │ NO
     ▼
-[4] Duplicate? ──YES──► REJECTED
+[4] Duplicate? (85%+ match) ──YES──► REJECTED
     │ NO
     ▼
-[5] German job? ──YES──► REJECTED 🇩🇪
+[5] German job? (language/flag) ──YES──► REJECTED 🇩🇪
     │ NO
     ▼
-[6] Chinese job? ──YES──► REJECTED 🇨🇳
+[6] Chinese job? (characters/location) ──YES──► REJECTED 🇨🇳
     │ NO
     ▼
-[7] Location restricted? ──YES──► REJECTED 🌍
+[7] Location restricted? (US/Canada/Europe/Asia/Israel) ──YES──► REJECTED 🌍
     │ NO
     ▼
-[8] Excluded title? ──YES──► REJECTED 🚷
+[8] Excluded title? (config.py) ──YES──► REJECTED 🚷
     │ NO
     ▼
 [9] Matches INCLUDE_KEYWORDS? ──NO──► REJECTED
@@ -324,59 +176,64 @@ JOB FOUND
   SENT TO TELEGRAM ✅
 ```
 
-**What gets filtered:**
+### What Gets Filtered:
 - 🇩🇪 German language jobs
 - 🇨🇳 Chinese jobs (China location or Chinese characters)
-- 🌍 US-only, Europe-only, Brazil, Colombia, Philippines, etc.
+- 🌍 US-only, Canada-only, Europe-only, UK-only
+- 🌍 Asia, Latin America, Philippines, Brazil, Israel
 - 📅 Jobs older than 14 days
 - 🚷 Specific excluded titles
 
-**What gets through:**
-- ✅ All remote jobs
-- ✅ Nigeria-based jobs
-- ✅ Worldwide remote opportunities
+### What Gets Through (Nigeria-Friendly):
+- ✅ Nigerian-based jobs (Lagos, Abuja, all 36 states)
+- ✅ Remote jobs (worldwide)
+- ✅ Africa-based jobs
+- ✅ UN/NGO jobs
 - ✅ Jobs with no location restrictions
 
 ---
 
 ## Customising Your Job Preferences
 
-Open `config.py` and edit:
+Edit `config.py` to control exactly what jobs you receive:
 
-### Add a role you want:
+### Add Roles You Want:
 ```python
 INCLUDE_KEYWORDS = [
-    ...
-    "grant writer",
-    "research assistant",
+    "virtual assistant", "customer support", "data entry",
+    "remote", "work from home", "admin", "writer",
+    "developer", "engineer", "project manager",
+    # Add your own keywords here
 ]
 ```
 
-### Add a priority role (gets 🔴 tag):
+### Add Priority Roles (Gets 🔴 tag):
 ```python
 PRIORITY_KEYWORDS = [
-    ...
-    "remote customer service",
+    "virtual assistant", "customer support", "data entry",
+    "remote customer service", "help desk",
 ]
 ```
 
-### Block a role:
+### Block Specific Titles:
 ```python
 EXCLUDE_TITLES = [
-    ...
-    "vice president",
+    "cdl driver", "truck driver", "warehouse",
+    "convent", "monastery", "pastor",
 ]
 ```
 
-### Set minimum salary:
+### Set Minimum Salary (Optional):
 ```python
-MIN_SALARY_USD = 300     # Skip jobs under $300/month
 MIN_SALARY_NGN = 80000   # Skip jobs under ₦80,000/month
+MIN_SALARY_USD = 300     # Skip jobs under $300/month
+# Set to 0 to disable
 ```
 
-### Skip old listings:
+### Skip Old Jobs:
 ```python
-MAX_JOB_AGE_DAYS = 7     # Only last 7 days
+MAX_JOB_AGE_DAYS = 14    # Only jobs from last 14 days
+# Set to 0 to disable
 ```
 
 ---
@@ -390,7 +247,7 @@ MAX_JOB_AGE_DAYS = 7     # Only last 7 days
 ### Step 1 — Create Your Telegram Bot
 1. Open Telegram, search `@BotFather`
 2. Send `/newbot` and follow prompts
-3. Name it (e.g., `Job Scraper Nigeria`)
+3. Name it (e.g., `JobScrappers`)
 4. Save the **Bot Token** BotFather gives you
 
 ### Step 2 — Create Your Telegram Channel
@@ -399,46 +256,51 @@ MAX_JOB_AGE_DAYS = 7     # Only last 7 days
 3. Forward any message from channel to `@JsonDumpBot`
 4. Find the `"id"` field — this is your **Channel ID** (starts with `-100`)
 
-### Step 3 — Fork or Create Repository
+### Step 3 — Create GitHub Repository
 1. Go to github.com → **+** → **New repository**
-2. Name it `job-scraper-bot`, set to **Private**
-3. Upload all files maintaining the structure:
-   - Root: `README.md`, `requirements.txt`
-   - `job-bot/`: `main.py`, `config.py`, `filter.py`, `sender.py`, `requirements.txt`
-   - `job-bot/scrapers/`: all scraper `.py` files
-   - `.github/workflows/run.yml`
+2. Name it `JobScarppers` (or your preferred name)
+3. Set to **Private**
+4. Click **Create repository**
 
-### Step 4 — Add Secrets
-**Settings → Secrets and variables → Actions → New repository secret**
+### Step 4 — Upload Project Files
+Upload all files maintaining the structure:
+- Root: `README.md`, `requirements.txt`
+- `job-bot/`: `main.py`, `config.py`, `filter.py`, `sender.py`, `requirements.txt`
+- `job-bot/scrapers/`: all scraper `.py` files
+- `.github/workflows/run.yml`
+
+### Step 5 — Add GitHub Secrets
+Go to **Settings → Secrets and variables → Actions → New repository secret**
 
 | Secret Name | Value |
 |-------------|-------|
 | `TELEGRAM_BOT_TOKEN` | Your bot token from BotFather |
 | `TELEGRAM_CHANNEL_ID` | Your channel ID (e.g., `-1003869498104`) |
 
-### Step 5 — Enable GitHub Actions
+### Step 6 — Enable GitHub Actions
 1. Click **Actions** tab
 2. If prompted, click **Enable workflows**
+3. The bot will start running automatically every 30 minutes
 
 ---
 
 ## Running the Bot
 
 ### Manual Test Run
-1. **Actions** tab → **Job Scraper Bot** → **Run workflow** → **Run workflow**
+1. **Actions** tab → **JobScrappers** → **Run workflow** → **Run workflow**
 2. Watch the live log, then check your Telegram channel
 
 ### Automatic Schedule
 The bot runs **every 30 minutes**, 24/7, including weekends.
 
 ### Stats & Reports
-- 📊 Run summary after each run (jobs sent, filtered, seen)
-- ⚠️ Health alert if any scraper fails 3 times in a row
-- 📈 Source breakdown showing which platforms found jobs
+- 📊 **Monthly report** on the 1st of each month (jobs sent, filtered, top sources)
+- ⚠️ **Health alert** if any scraper fails 3 times in a row
+- 🔇 **No daily/weekly spam** — only monthly summaries
 
 ---
 
-## Resetting the Bot (Fresh Start)
+## Resetting the Bot
 
 To clear all history and start fresh:
 
@@ -447,44 +309,6 @@ To clear all history and start fresh:
 3. Run workflow manually
 
 The bot will treat every job as new and send everything.
-
----
-
-## Adding New Sources
-
-### To add a new job board:
-
-1. Create `scrapers/newsource.py`:
-```python
-def scrape_newsource():
-    jobs = []
-    # Your scraping logic here
-    jobs.append({
-        "title": "Job Title",
-        "company": "Company Name",
-        "location": "Remote",
-        "description": "Job description",
-        "url": "https://apply.com",
-        "source": "NewSource",
-    })
-    return jobs
-```
-
-2. Import in `main.py`:
-```python
-from scrapers.newsource import scrape_newsource
-```
-
-3. Add to scrapers list:
-```python
-scrapers = [
-    ...
-    ("NewSource", scrape_newsource),
-]
-```
-
-### To add a Telegram channel:
-Add username to `TELEGRAM_JOB_CHANNELS` in `scrapers/telegram_channels.py`
 
 ---
 
@@ -516,7 +340,9 @@ _Source: RemoteOK_
 ──────────────────────────────
 🗂️ Virtual & Admin
 ──────────────────────────────
-🌍 General / Remote
+🌍 NGO & UN
+──────────────────────────────
+🌐 General / Remote
 ```
 
 ---
@@ -526,12 +352,13 @@ _Source: RemoteOK_
 | Issue | Solution |
 |-------|----------|
 | **No jobs in Telegram** | Check bot is channel admin, verify secrets, run manually and check logs |
-| **Scraper shows 0 jobs** | Site may have changed structure — health alert will notify after 3 failures |
-| **German/Chinese jobs getting through** | Update `GERMAN_INDICATORS` or `CHINESE_INDICATORS` in `filter.py` |
+| **Scraper shows 0 jobs** | Site may have changed — health alert after 3 failures |
+| **German/Chinese jobs getting through** | Update filters in `filter.py` |
 | **Wrong jobs being filtered** | Adjust `INCLUDE_KEYWORDS` in `config.py` |
-| **Duplicate jobs** | Check `seen_jobs.json` cache is persisting (Settings → Actions → Caches) |
-| **HTML in descriptions** | `strip_html()` handles this — shouldn't appear in current version |
-| **Rate limiting errors** | Built-in retry with exponential backoff handles 429 errors |
+| **Duplicate jobs** | Check cache is persisting (Settings → Actions → Caches) |
+| **Import errors** | Ensure all files are in correct folders (`job-bot/` subfolder) |
+| **Rate limiting errors** | Built-in retry handles 429 errors automatically |
+| **Telegram links showing instead of real links** | Fixed in latest version — extracts real application URLs |
 
 ---
 
@@ -544,16 +371,40 @@ _Source: RemoteOK_
 
 ---
 
-## Recent Updates
+## Recent Updates (v2.0)
 
-### v2.0 (Current)
-- ✅ **Renamed to Job Scraper Bot**
-- ✅ **30-minute scan interval** (was 1 hour)
+- ✅ **Name changed to JobScrappers**
+- ✅ **30-minute scan interval** 
 - ✅ **Simplified filters** — removed haram, alcohol, adult content filters
 - ✅ **Telegram link extraction** — sends real application links, not group links
-- ✅ **German & Chinese job filtering** — blocks non-English opportunities
-- ✅ **Clean formatting** — no HTML tags, no escaped slashes
-- ✅ **17 active scrapers** — removed Jobicy (Chinese jobs)
+- ✅ **German & Chinese job filtering**
+- ✅ **Clean formatting** — no HTML tags or escaped slashes
+- ✅ **15 active scrapers** — all free sources
+- ✅ **Monthly reports only** — no daily spam
+- ✅ **Smart location filtering** — filters out US, Europe, Asia, Israel jobs
+- ✅ **Telegram sources always kept** — Nigerian job groups never filtered
+
+---
+
+## Frequently Asked Questions
+
+### Is this really free?
+**Yes!** All job sources are free to apply. GitHub Actions free tier handles the automation. No subscriptions, no hidden costs.
+
+### How many jobs will I get?
+- Nigerian job boards: 10-30 jobs/day
+- Remote global jobs: 20-50 jobs/day (filtered)
+- Telegram groups: 5-15 jobs/day
+- **Total: 50-150 jobs/day**
+
+### Can I customize what jobs I get?
+**Absolutely!** Edit `INCLUDE_KEYWORDS` in `config.py` to match your desired roles.
+
+### What if my laptop is off?
+The bot runs on GitHub's cloud servers. Your laptop can be completely off — the bot keeps running.
+
+### How do I stop the bot?
+Delete the GitHub repository or disable Actions in repository settings.
 
 ---
 
@@ -573,3 +424,4 @@ Issues? Open a ticket on GitHub. For quick fixes:
 ---
 
 **Happy Job Hunting! 🎯**
+```
