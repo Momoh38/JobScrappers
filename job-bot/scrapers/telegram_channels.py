@@ -1,6 +1,6 @@
 """
 telegram_channels.py — Scrapes job posts from public Telegram channels
-UPDATED: Better link extraction - removes trailing text like "(Follow)", "Apply", etc.
+UPDATED: More precise URL cleaning - don't remove important URL parts
 """
 
 import re
@@ -23,8 +23,7 @@ TELEGRAM_JOB_CHANNELS = [
 
 # Common job application domains (prioritize these)
 JOB_DOMAINS = [
-    'linkedin.com/jobs',
-    'linkedin.com/company',
+    'linkedin.com',
     'indeed.com',
     'glassdoor.com',
     'jobberman.com',
@@ -41,42 +40,48 @@ JOB_DOMAINS = [
     'wfh.io',
     'virtustant.com',
     'forms.gle',
-    'docs.google.com/forms',
+    'docs.google.com',
     'airtable.com',
     'typeform.com',
     'greenhouse.io',
     'lever.co',
     'workable.com',
     'bamboohr.com',
-    'apply.workable.com',
-    'careers.',
-    'jobs.',
-    'apply.',
-    'hire.',
-    'ellamanager.com',  # Added from example
+    'ellamanager.com',
 ]
 
 
 def clean_url(url: str) -> str:
     """
-    Clean URL by removing trailing garbage like (Follow), (Apply), ---, etc.
+    Clean URL by removing ONLY obvious garbage at the end.
+    Does NOT remove actual URL path characters.
     """
     if not url:
         return url
     
-    # Remove trailing parentheses and their content like "(Follow)", "(Apply Now)"
-    url = re.sub(r'\s*\([^)]*\)\s*$', '', url)
+    # Remove trailing parentheses with common words like (Follow), (Apply)
+    # But ONLY if they appear at the very end
+    url = re.sub(r'\s*\(Follow\)\s*$', '', url)
+    url = re.sub(r'\s*\(Apply\)\s*$', '', url)
+    url = re.sub(r'\s*\(Apply Now\)\s*$', '', url)
+    url = re.sub(r'\s*\(Click\)\s*$', '', url)
+    url = re.sub(r'\s*\(Link\)\s*$', '', url)
     
-    # Remove trailing dashes/hyphens
-    url = re.sub(r'\s*[-–—]+.*$', '', url)
+    # Remove trailing dashes with common words
+    url = re.sub(r'\s*[-–—]+\s*Follow\s*$', '', url, flags=re.IGNORECASE)
+    url = re.sub(r'\s*[-–—]+\s*Apply\s*$', '', url, flags=re.IGNORECASE)
+    url = re.sub(r'\s*[-–—]+\s*Click\s*$', '', url, flags=re.IGNORECASE)
     
-    # Remove trailing words like "Follow", "Apply", "Click", "Here"
-    url = re.sub(r'\s+(?:Follow|Apply|Click|Here|Link|Job|Position)\s*$', '', url, flags=re.IGNORECASE)
+    # Remove standalone words at the end (not part of URL)
+    url = re.sub(r'\s+Follow$', '', url, flags=re.IGNORECASE)
+    url = re.sub(r'\s+Apply$', '', url, flags=re.IGNORECASE)
+    url = re.sub(r'\s+Click$', '', url, flags=re.IGNORECASE)
+    url = re.sub(r'\s+Here$', '', url, flags=re.IGNORECASE)
     
-    # Remove any non-URL characters at the end
-    url = re.sub(r'[^a-zA-Z0-9/:._-]+$', '', url)
+    # Remove trailing spaces and punctuation that shouldn't be in URL
+    url = url.rstrip(' .,!?;:')
     
-    return url.strip()
+    return url
 
 
 def extract_external_links(text: str) -> list:
@@ -87,35 +92,21 @@ def extract_external_links(text: str) -> list:
     if not text:
         return []
     
-    # Find all URLs in the text
-    url_pattern = r'https?://[^\s<>"\')\]]+'
+    # Find all URLs in the text - match until space or newline or end of line
+    url_pattern = r'https?://[^\s\n]+'
     all_urls = re.findall(url_pattern, text)
     
-    # Clean up URLs and remove trailing garbage
-    cleaned_urls = []
+    external_links = []
+    
     for url in all_urls:
         # Clean the URL
         url = clean_url(url)
-        # Remove trailing punctuation
-        url = url.rstrip('.,!?;:)]')
-        if url and url.startswith('http'):
-            cleaned_urls.append(url)
-    
-    # Also look for URLs that might have been split by newlines
-    lines = text.split('\n')
-    for line in lines:
-        if 'http' in line:
-            # Extract URL even if it has spaces around it
-            urls_in_line = re.findall(r'https?://[^\s]+', line)
-            for url in urls_in_line:
-                url = clean_url(url)
-                url = url.rstrip('.,!?;:)]')
-                if url and url.startswith('http'):
-                    cleaned_urls.append(url)
-    
-    # Filter out Telegram internal links
-    external_links = []
-    for url in cleaned_urls:
+        
+        # Skip if empty
+        if not url:
+            continue
+            
+        # Skip Telegram internal links
         is_telegram = False
         telegram_domains = ['t.me', 'telegram.me', 'telegram.dog', 'telegra.ph']
         for tg_domain in telegram_domains:
@@ -124,14 +115,15 @@ def extract_external_links(text: str) -> list:
                 break
         
         if not is_telegram:
-            external_links.append(url)
+            # Verify it's a valid URL format
+            if url.startswith('http') and len(url) > 10:
+                external_links.append(url)
     
     # Remove duplicates while preserving order
     seen = set()
     unique_links = []
     for link in external_links:
-        # Also validate the link looks like a real URL
-        if link and link not in seen and len(link) > 10:
+        if link not in seen:
             seen.add(link)
             unique_links.append(link)
     
@@ -147,13 +139,13 @@ def extract_email(text: str) -> list:
 
 def extract_whatsapp_link(text: str) -> list:
     """Extract WhatsApp links from text"""
-    whatsapp_pattern = r'https?://(?:chat\.whatsapp\.com|wa\.me|api\.whatsapp\.com)[^\s<>"\')\]]+'
+    whatsapp_pattern = r'https?://(?:chat\.whatsapp\.com|wa\.me|api\.whatsapp\.com)[^\s\n]+'
     whatsapp_links = re.findall(whatsapp_pattern, text)
-    return [clean_url(link) for link in whatsapp_links]
+    return whatsapp_links
 
 
 def is_job_application_link(url: str) -> bool:
-    """Check if a URL is a job application link (not just a company homepage)"""
+    """Check if a URL is a job application link"""
     url_lower = url.lower()
     
     # Check if it matches known job domains
@@ -172,9 +164,9 @@ def is_job_application_link(url: str) -> bool:
         '/recruitment/',
         '/candidate/',
         '/job/',
+        'job-apply',
         'applynow',
         'careers',
-        'job-apply',  # Added for ellamanager.com style
     ]
     
     for pattern in job_patterns:
@@ -185,10 +177,7 @@ def is_job_application_link(url: str) -> bool:
 
 
 def get_best_application_link(external_links: list, emails: list, whatsapp_links: list) -> str:
-    """
-    Determine the best application link/method from available options.
-    Priority: Job application URLs > Emails > WhatsApp > Other links
-    """
+    """Determine the best application link/method"""
     # First, look for job application specific URLs
     for link in external_links:
         if is_job_application_link(link):
@@ -198,7 +187,7 @@ def get_best_application_link(external_links: list, emails: list, whatsapp_links
     if external_links:
         return external_links[0]
     
-    # Third, return email (user can copy)
+    # Third, return email
     if emails:
         return f"mailto:{emails[0]}"
     
@@ -210,10 +199,7 @@ def get_best_application_link(external_links: list, emails: list, whatsapp_links
 
 
 def extract_application_method(text: str) -> dict:
-    """
-    Extract all application methods from message text.
-    Returns dict with URL, email, WhatsApp, etc.
-    """
+    """Extract all application methods from message text"""
     result = {
         'url': None,
         'emails': [],
@@ -240,13 +226,9 @@ def extract_application_method(text: str) -> dict:
 
 
 def scrape_channel(channel_username: str, limit: int = 20) -> list:
-    """
-    Scrape job posts from a single Telegram channel using public web preview.
-    Returns list of job dictionaries.
-    """
+    """Scrape job posts from a single Telegram channel"""
     jobs = []
     
-    # Use Telegram's public web interface
     url = f"https://t.me/s/{channel_username}"
     
     try:
@@ -260,34 +242,31 @@ def scrape_channel(channel_username: str, limit: int = 20) -> list:
             return []
         
         soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # Find all message containers
         messages = soup.find_all('div', class_='tgme_widget_message')
         
         for msg in messages[:limit]:
             try:
-                # Extract message text
                 text_elem = msg.find('div', class_='tgme_widget_message_text')
                 if not text_elem:
                     continue
                 
                 message_text = text_elem.get_text()
                 
-                # Skip very short messages (likely not job posts)
                 if len(message_text) < 30:
                     continue
                 
-                # Extract application method
                 app_method = extract_application_method(message_text)
                 
-                # Get message ID and link
                 message_id = msg.get('data-post')
                 if message_id:
                     parts = message_id.split('/')
                     if len(parts) >= 2:
                         message_id = parts[-1]
                 
-                # Only add if we have an application method
+                # Debug: Print extracted URL for first few messages
+                if len(jobs) < 2 and app_method['url']:
+                    print(f"           Extracted URL: {app_method['url'][:80]}...")
+                
                 if app_method['url']:
                     job = {
                         'title': extract_job_title(message_text),
@@ -307,7 +286,6 @@ def scrape_channel(channel_username: str, limit: int = 20) -> list:
                     jobs.append(job)
                     
             except Exception as e:
-                print(f"     ⚠️ Error parsing message: {e}")
                 continue
                 
     except Exception as e:
@@ -326,12 +304,8 @@ def extract_job_title(text: str) -> str:
             # Remove common prefixes
             cleaned = re.sub(r'^(URGENTLY|WE\'RE|HIRING|VACANCY|JOB|POSITION|NOW HIRING|🚨|🔥|💼)[:\s]+', '', line, flags=re.IGNORECASE)
             cleaned = re.sub(r'@\w+', '', cleaned)
-            
-            # Remove trailing follow/apply text
             cleaned = re.sub(r'\s*\([^)]*\)\s*$', '', cleaned)
-            cleaned = re.sub(r'\s*[-–—]+.*$', '', cleaned)
             
-            # Check if it looks like a job title
             if len(cleaned) > 5 and len(cleaned) < 100:
                 return cleaned[:100]
     
@@ -343,7 +317,7 @@ def extract_company(text: str) -> str:
     patterns = [
         r'(?:at|@|company:?\s+)([A-Z][a-zA-Z0-9\s&]+?)(?:\s+[Ii]n|\s+[Ll]ocated|\||$|\.|\,|$)',
         r'via\s+@(\w+)',
-        r'([A-Z][a-zA-Z0-9\s&]+?)\s+(?:is hiring|is recruiting|is looking for)',
+        r'([A-Z][a-zA-Z0-9\s&]+?)\s+(?:is hiring|is recruiting)',
     ]
     
     for pattern in patterns:
@@ -360,7 +334,7 @@ def extract_location(text: str) -> str:
     """Extract location from message"""
     location_patterns = [
         r'(?:location|located|based|in|@)[:\s]+(\w+(?:\s+\w+)?(?:\s*,\s*\w+)?)',
-        r'(remote|worldwide|global|anywhere|on-site|hybrid|onsite|nigeria|lagos|abuja)',
+        r'(remote|worldwide|global|anywhere|nigeria|lagos|abuja)',
     ]
     
     for pattern in location_patterns:
@@ -369,7 +343,7 @@ def extract_location(text: str) -> str:
             location = match.group(1) if match.groups() else match.group(0)
             if 'remote' in location.lower():
                 return "Remote"
-            elif 'worldwide' in location.lower() or 'global' in location.lower():
+            elif 'worldwide' in location.lower():
                 return "Remote (Worldwide)"
             elif len(location) < 50:
                 return location.strip()
@@ -395,16 +369,14 @@ def scrape_telegram_channels():
         print(f"        → @{channel}")
         jobs = scrape_channel(channel, limit=15)
         all_jobs.extend(jobs)
-        print(f"           Found {len(jobs)} jobs with valid application links")
+        print(f"           Found {len(jobs)} jobs")
     
     return all_jobs
 
 
-# For testing
 if __name__ == "__main__":
     jobs = scrape_telegram_channels()
     print(f"\n✅ Total jobs found: {len(jobs)}")
     for job in jobs[:3]:
         print(f"\n📋 {job['title']}")
         print(f"   🔗 {job['url']}")
-        print(f"   📍 {job['location']}")
