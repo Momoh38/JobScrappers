@@ -430,7 +430,7 @@ Absolutely. Edit `INCLUDE_KEYWORDS` in `config.py` to match your target roles.
 <details>
 <summary><strong>Does my laptop need to stay on?</strong></summary>
 
-No. The bot runs entirely on GitHub's cloud servers — your laptop can be completely off.
+No. The bot runs entirely on GitHub's cloud servers your laptop can be completely off.
 </details>
 
 <details>
