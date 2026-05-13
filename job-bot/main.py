@@ -1,6 +1,6 @@
 """
 main.py — Entry point for Job Scraper Bot
-UPDATED: Keep all FREE sources, add better location filtering
+UPDATED: Telegram jobs are ALWAYS kept (Nigeria-friendly)
 """
 
 import json
@@ -22,21 +22,20 @@ from scrapers.ngo_jobs        import scrape_ngo_jobs
 from scrapers.africa_jobs     import scrape_africa_jobs
 
 # Global Remote - FREE (need better filtering)
-from scrapers.remoteok        import scrape_remoteok       # ✅ FREE - just filter well
-from scrapers.remotive        import scrape_remotive       # ✅ FREE - clean descriptions
-from scrapers.themuse         import scrape_themuse        # ✅ FREE
-from scrapers.workingnomads   import scrape_workingnomads  # ✅ FREE - filter location
-from scrapers.braintrust      import scrape_braintrust     # ✅ FREE - filter location
-from scrapers.himalayas       import scrape_himalayas      # ✅ FREE - filter Israel jobs
-from scrapers.wfh_io          import scrape_wfh_io         # ✅ FREE - filter well
-from scrapers.virtustant      import scrape_virtustant     # ✅ FREE
+from scrapers.remoteok        import scrape_remoteok
+from scrapers.remotive        import scrape_remotive
+from scrapers.themuse         import scrape_themuse
+from scrapers.workingnomads   import scrape_workingnomads
+from scrapers.braintrust      import scrape_braintrust
+from scrapers.himalayas       import scrape_himalayas
+from scrapers.wfh_io          import scrape_wfh_io
+from scrapers.virtustant      import scrape_virtustant
 
-# Social Media - GOOD
+# Social Media - GOOD (Nigeria-friendly, NEVER filter)
 from scrapers.telegram_channels import scrape_telegram_channels
 
 # --- REMOVED (Only these are actually paid/broken) ---
 # from scrapers.weworkremotely  import scrape_weworkremotely # ❌ Requires payment
-# from scrapers.we_work_remotely_enhanced import scrape_wwr_enhanced # ❌ Requires payment
 # from scrapers.jobicy          import scrape_jobicy        # ❌ Chinese jobs
 # from scrapers.indeed_ng       import scrape_indeed_ng     # ❌ 403 Forbidden
 # from scrapers.grabjobs        import scrape_grabjobs      # ❌ 403 Forbidden
@@ -66,15 +65,23 @@ FILTER_LOCATIONS = [
     # Location patterns
     'must be based in', 'must reside in', 'right to work',
     'us citizen', 'green card', 'security clearance',
-    
-    # Israel (specific exclusion)
-    'israel', 'tel aviv', 'jerusalem',
 ]
 
 # GOOD locations (Nigeria-friendly)
 GOOD_LOCATIONS = [
     'remote', 'worldwide', 'global', 'anywhere', 'work from home',
     'nigeria', 'lagos', 'abuja', 'africa', 'kenya', 'ghana', 'south africa'
+]
+
+# Sources that are ALWAYS Nigeria-friendly (never filter by location)
+ALWAYS_KEEP_SOURCES = [
+    "Telegram",  # Telegram channels are Nigerian job groups
+    "Jobberman",  # Nigerian job board
+    "MyJobMag",   # Nigerian job board
+    "NGCareers",  # Nigerian job board
+    "JobGurus",   # Nigerian job board
+    "Africa Jobs", # African jobs
+    "NGO / UN Jobs", # UN jobs often in Africa
 ]
 
 
@@ -106,8 +113,15 @@ def update_health(health: dict, name: str, success: bool) -> dict:
     return health
 
 
-def is_location_nigeria_friendly(location: str, title: str = "", description: str = "") -> bool:
-    """Check if job location is accessible from Nigeria"""
+def is_location_nigeria_friendly(location: str, title: str = "", description: str = "", source: str = "") -> bool:
+    """
+    Check if job location is accessible from Nigeria.
+    ALWAYS returns True for sources in ALWAYS_KEEP_SOURCES (like Telegram).
+    """
+    # SOURCES THAT ARE ALWAYS NIGERIA-FRIENDLY (never filter)
+    if source in ALWAYS_KEEP_SOURCES:
+        return True
+    
     if not location:
         return True  # No location specified, assume remote
     
@@ -126,14 +140,13 @@ def is_location_nigeria_friendly(location: str, title: str = "", description: st
     # Then check if it contains any bad locations
     for bad in FILTER_LOCATIONS:
         if bad in combined:
-            print(f"     📍 Location filtered: '{bad}' in '{location}'")
+            print(f"     📍 Location filtered: '{bad}' in '{location}' (source: {source})")
             return False
     
     # If location is a single country name not in good list, likely restricted
-    # Check if location looks like a single country (e.g., "Germany", "Philippines")
     single_country = re.match(r'^[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?$', location_lower)
     if single_country and location_lower not in GOOD_LOCATIONS:
-        print(f"     📍 Location filtered: single country '{location}' (not remote)")
+        print(f"     📍 Location filtered: single country '{location}' (not remote, source: {source})")
         return False
     
     return True
@@ -166,20 +179,21 @@ def clean_remotive_job(job: dict) -> dict:
 def run():
     print(f"🚀 Job Scraper Bot — {datetime.now().strftime('%d %b %Y %H:%M')} WAT")
     print(f"✅ Using FREE job sources with smart location filtering\n")
+    print(f"📌 Telegram & Nigerian sources are ALWAYS kept (no location filtering)\n")
     
     # ALL FREE SCRAPERS
     scrapers = [
-        # Nigeria-specific (MOST RELIABLE)
+        # Nigeria-specific (MOST RELIABLE - NEVER FILTER)
         ("Jobberman",           scrape_jobberman),
         ("MyJobMag",            scrape_myjobmag),
         ("NGCareers",           scrape_ngcareers),
         ("JobGurus",            scrape_jobgurus),
         
-        # International / NGO / Africa
+        # International / NGO / Africa (NEVER FILTER)
         ("NGO / UN Jobs",       scrape_ngo_jobs),
         ("Africa Jobs",         scrape_africa_jobs),
         
-        # Global Remote (FREE)
+        # Global Remote (FILTER these by location)
         ("RemoteOK",            scrape_remoteok),
         ("Remotive",            scrape_remotive),
         ("TheMuse",             scrape_themuse),
@@ -189,7 +203,7 @@ def run():
         ("WFH.io",              scrape_wfh_io),
         ("Virtustant",          scrape_virtustant),
         
-        # Social Media
+        # Social Media (NEVER FILTER - Nigerian job groups)
         ("Telegram",            scrape_telegram_channels),
     ]
     
@@ -211,24 +225,27 @@ def run():
             jobs = scraper()
             original_count = len(jobs)
             
-            # Apply location filtering to all jobs
+            # Apply location filtering (but NEVER filter Telegram/Nigerian sources)
             filtered_jobs = []
             for job in jobs:
                 location = job.get('location', '')
                 title = job.get('title', '')
                 description = job.get('description', '')
                 
-                if is_location_nigeria_friendly(location, title, description):
+                if is_location_nigeria_friendly(location, title, description, name):
                     filtered_jobs.append(job)
                 else:
                     location_filtered += 1
+                    if location:
+                        print(f"     📍 Filtered: {job.get('title', '?')[:40]}... ({location})")
             
             # Special handling for Remotive (clean descriptions)
             if name == "Remotive":
                 filtered_jobs = [clean_remotive_job(job) for job in filtered_jobs]
             
             count = len(filtered_jobs)
-            print(f"     ✅ Found {original_count} raw, {count} Nigeria-friendly jobs")
+            keep_note = " (ALL KEPT)" if name in ALWAYS_KEEP_SOURCES else ""
+            print(f"     ✅ Found {original_count} raw, {count} Nigeria-friendly jobs{keep_note}")
             all_jobs.extend(filtered_jobs)
             source_counts[name] = count
             health = update_health(health, name, success=True)
@@ -299,6 +316,7 @@ def run():
     print(f"   📍 Location removed: {location_filtered}")
     print(f"   ❌ Failed:       {failed_send}")
     print(f"\n💡 All {len(scrapers)} sources are FREE - no payment required!")
+    print(f"   📌 Telegram & Nigerian sources: ALL jobs kept (Nigeria-friendly)")
     
     print(f"\n📊 Scraper Health:")
     working = []
