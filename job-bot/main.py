@@ -11,6 +11,10 @@ from datetime import datetime
 
 # --- FREE SOURCES (Keep all, just filter better) ---
 
+# --- NEW SOURCES ---
+from scrapers.jobsregion import scrape_jobsregion
+from scrapers.jobfound import scrape_jobfound
+
 # Nigeria-specific - BEST
 from scrapers.jobberman       import scrape_jobberman
 from scrapers.myjobmag        import scrape_myjobmag
@@ -183,6 +187,11 @@ def run():
     
     # ALL FREE SCRAPERS
     scrapers = [
+
+        # NEW SOURCES - Nigerian/African job boards
+        ("Jobsregion",          scrape_jobsregion),
+        ("Jobfound",            scrape_jobfound),
+        
         # Nigeria-specific (MOST RELIABLE - NEVER FILTER)
         ("Jobberman",           scrape_jobberman),
         ("MyJobMag",            scrape_myjobmag),
