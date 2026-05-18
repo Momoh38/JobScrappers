@@ -1,131 +1,140 @@
 """
-jobfound.py - Scrapes job listings from Jobfound.org
-Source: https://jobfound.org
+jobfound.py - Scrapes job-related content from Jobfound.org
+UPDATED: Searches for job postings across the site
 """
 
 import re
 import requests
 from datetime import datetime
 from bs4 import BeautifulSoup
+from urllib.parse import urljoin, urlparse
 
 def scrape_jobfound():
-    """Scrape job listings from Jobfound.org"""
+    """Scrape job-related content from Jobfound.org"""
     jobs = []
+    seen_urls = set()
     
-    url = "https://jobfound.org/jobs/"
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+    }
     
-    try:
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        }
-        response = requests.get(url, headers=headers, timeout=30)
-        
-        if response.status_code != 200:
-            print(f"     ⚠️ Jobfound returned status {response.status_code}")
-            return []
-        
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # Find job listings
-        job_elements = soup.find_all('div', class_=re.compile(r'job|listing|card|item', re.I))
-        
-        if not job_elements:
-            job_elements = soup.find_all('article', class_=re.compile(r'job', re.I))
-        
-        if not job_elements:
-            job_elements = soup.find_all('tr', class_=re.compile(r'job', re.I))
-        
-        for job_elem in job_elements[:30]:
-            try:
-                # Extract title
-                title_elem = job_elem.find(['h2', 'h3', 'h4', 'strong', 'a'], class_=re.compile(r'title|heading|name|role', re.I))
-                if not title_elem:
-                    title_elem = job_elem.find('a')
+    base_url = "https://jobfound.org"
+    
+    # Try different possible URLs
+    urls_to_try = [
+        base_url,
+        f"{base_url}/jobs",
+        f"{base_url}/job",
+        f"{base_url}/vacancies",
+        f"{base_url}/careers",
+        f"{base_url}/opportunities",
+        f"{base_url}/work-from-home",
+        f"{base_url}/home-jobs",
+    ]
+    
+    all_job_urls = []
+    
+    for url in urls_to_try:
+        try:
+            response = requests.get(url, headers=headers, timeout=30, allow_redirects=True)
+            if response.status_code == 200:
+                print(f"     📍 Found page: {url}")
+                soup = BeautifulSoup(response.text, 'html.parser')
                 
-                title = title_elem.get_text(strip=True) if title_elem else "Job Opportunity"
-                
-                # Extract URL
-                link_elem = job_elem.find('a', href=True)
-                if not link_elem:
-                    link_elem = title_elem if title_elem and title_elem.get('href') else None
-                
-                job_url = link_elem.get('href') if link_elem else None
-                if job_url and not job_url.startswith('http'):
-                    job_url = f"https://jobfound.org{job_url}"
-                
-                # Extract company
-                company_elem = job_elem.find(class_=re.compile(r'company|employer|firm|by', re.I))
-                company = company_elem.get_text(strip=True) if company_elem else "Not specified"
-                
-                # Extract location
-                location_elem = job_elem.find(class_=re.compile(r'location|place|city|country', re.I))
-                location = location_elem.get_text(strip=True) if location_elem else "Remote"
-                
-                # Extract description
-                desc_elem = job_elem.find(class_=re.compile(r'description|desc|summary|details', re.I))
-                if not desc_elem:
-                    desc_elem = job_elem.find('p')
-                description = desc_elem.get_text(strip=True) if desc_elem else ""
-                
-                # Extract salary if available
-                salary_elem = job_elem.find(class_=re.compile(r'salary|pay|compensation', re.I))
-                salary = salary_elem.get_text(strip=True) if salary_elem else ""
-                
-                # Extract date
-                date_elem = job_elem.find(class_=re.compile(r'date|posted|time', re.I))
-                date_posted = date_elem.get_text(strip=True) if date_elem else datetime.now().isoformat()
-                
-                if job_url:
-                    job = {
-                        'title': title[:150],
-                        'company': company[:100],
-                        'location': location[:100],
-                        'description': description[:800] if description else "",
-                        'salary': salary[:100],
-                        'url': job_url,
-                        'source': 'Jobfound',
-                        'date_posted': date_posted,
-                        'tags': '',
-                    }
-                    jobs.append(job)
+                # Look for job-related links
+                for link in soup.find_all('a', href=True):
+                    href = link.get('href', '')
+                    text = link.get_text(strip=True)
                     
-            except Exception as e:
+                    # Keywords that indicate job content
+                    job_keywords = ['job', 'vacancy', 'hiring', 'career', 'employment', 'opportunity', 'position', 'work', 'remote']
+                    
+                    if any(keyword in href.lower() for keyword in job_keywords) or any(keyword in text.lower() for keyword in job_keywords):
+                        if href.startswith('/'):
+                            full_url = urljoin(base_url, href)
+                        elif href.startswith('http'):
+                            full_url = href
+                        else:
+                            continue
+                        
+                        # Filter out non-job pages
+                        if full_url not in seen_urls and full_url != base_url:
+                            seen_urls.add(full_url)
+                            # Only add if it looks like a job page
+                            if any(keyword in full_url.lower() for keyword in ['job', 'vacancy', 'career']):
+                                all_job_urls.append(full_url)
+                
+                # Also look for job listings in the page content
+                text_content = soup.get_text()
+                job_sections = re.finditer(r'(?i)(job|vacancy|hiring|career|opportunity).{0,200}', text_content)
+                for match in job_sections[:10]:
+                    context = match.group(0)
+                    # Try to extract potential job titles from context
+                    title_match = re.search(r'([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)', context)
+                    if title_match and len(title_match.group(0)) > 10:
+                        potential_job = {
+                            'title': title_match.group(0),
+                            'company': 'Not specified',
+                            'location': 'Remote/Nigeria',
+                            'description': context[:300],
+                            'salary': '',
+                            'url': url,
+                            'source': 'Jobfound',
+                            'date_posted': datetime.now().isoformat(),
+                            'tags': '',
+                        }
+                        jobs.append(potential_job)
+                        
+        except Exception as e:
+            continue
+    
+    # If we found job URLs, scrape them
+    for job_url in all_job_urls[:30]:
+        try:
+            response = requests.get(job_url, headers=headers, timeout=30)
+            if response.status_code != 200:
                 continue
-        
-        # Fallback: look for all job-related links
-        if not jobs:
-            all_links = soup.find_all('a', href=True)
-            for link in all_links[:30]:
-                href = link.get('href', '')
-                text = link.get_text(strip=True)
-                
-                if ('/job' in href.lower() or '/jobs' in href.lower() or '/vacancy' in href.lower() or '/position' in href.lower()) and len(text) > 5:
-                    if not href.startswith('http'):
-                        href = f"https://jobfound.org{href}"
-                    
-                    job = {
-                        'title': text[:100],
-                        'company': "Not specified",
-                        'location': "Remote",
-                        'description': "",
-                        'salary': "",
-                        'url': href,
-                        'source': 'Jobfound',
-                        'date_posted': datetime.now().isoformat(),
-                        'tags': '',
-                    }
-                    jobs.append(job)
-        
-        print(f"     📥 Jobfound: {len(jobs)} jobs found")
-        return jobs
-        
-    except Exception as e:
-        print(f"     ❌ Jobfound error: {e}")
-        return []
+            
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # Try to extract title
+            title_elem = soup.find('h1')
+            title = title_elem.get_text(strip=True) if title_elem else "Job Opportunity"
+            
+            # Try to extract description
+            desc_elem = soup.find('main') or soup.find('article') or soup.find('div', class_=re.compile(r'content', re.I))
+            description = ""
+            if desc_elem:
+                for unwanted in desc_elem.find_all(['script', 'style']):
+                    unwanted.decompose()
+                description = desc_elem.get_text(strip=True)
+                description = re.sub(r'\s+', ' ', description)
+                description = description[:500]
+            
+            job = {
+                'title': title[:150],
+                'company': 'Not specified',
+                'location': 'Remote/Nigeria',
+                'description': description if description else "Click Apply Now button for details",
+                'salary': '',
+                'url': job_url,
+                'source': 'Jobfound',
+                'date_posted': datetime.now().isoformat(),
+                'tags': '',
+            }
+            jobs.append(job)
+            
+        except Exception as e:
+            continue
+    
+    print(f"     📥 Jobfound: {len(jobs)} job listings found")
+    return jobs
 
 
 if __name__ == "__main__":
     jobs = scrape_jobfound()
+    print(f"\n✅ Total: {len(jobs)} jobs")
     for job in jobs[:3]:
         print(f"\n📋 {job['title']}")
         print(f"   🔗 {job['url']}")
