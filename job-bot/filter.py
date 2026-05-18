@@ -116,7 +116,7 @@ def is_location_restricted(location: str, description: str, source: str = "") ->
     combined = f"{location.lower()} {description.lower()}"
     
     # Telegram and Nigerian sources are ALWAYS allowed
-    always_keep_sources = ["Telegram", "Jobberman", "MyJobMag", "NGCareers", "JobGurus", "Africa Jobs", "NGO / UN Jobs"]
+    always_keep_sources = ["Telegram", "Jobberman", "MyJobMag", "NGCareers", "JobGurus", "Africa Jobs", "NGO / UN Jobs", "Jobsregion", "Jobfound"]
     if source in always_keep_sources:
         return False
     
