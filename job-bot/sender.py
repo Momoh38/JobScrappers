@@ -1,6 +1,6 @@
 """
 sender.py — Formats and sends job listings to Telegram.
-UPDATED: Removed descriptions, clean category headers, better location extraction
+UPDATED: Removed source line, cleaner output
 """
 
 import os
@@ -223,14 +223,13 @@ def is_job_posting(title: str, description: str) -> bool:
 
 
 def format_job(job: dict) -> str:
-    """Format job with NO description, just clean headers"""
+    """Format job with NO description and NO source line"""
     title = clean_title(job.get("title", "Job Opportunity"))
     company = clean_company(job.get("company", "Not specified"))
     location = clean_location(job.get("location", ""))
     salary = job.get("salary", "")
     quality = job.get("_quality", 3)
     priority = job.get("_priority", False)
-    source = job.get("source", "")
 
     stars = "⭐" * quality
     priority_tag = "🔴 PRIORITY MATCH\n" if priority else ""
@@ -253,16 +252,13 @@ def format_job(job: dict) -> str:
     
     lines.append(f"✨ Quality: {stars}")
     
-    # NO DESCRIPTION - just the apply button
-    
-    if source:
-        lines.append(f"\n_Source: {source}_")
+    # NO description, NO source line - just clean job info
 
     return "\n".join(lines)
 
 
 def send_job(job: dict) -> bool:
-    """Send job to Telegram - NO description, just clean message"""
+    """Send job to Telegram - clean message with just Apply Now button"""
     url_link = job.get("url", "")
     
     if not url_link or not url_link.startswith("http"):
