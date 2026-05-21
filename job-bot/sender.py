@@ -1,6 +1,6 @@
 """
 sender.py — Formats and sends job listings to Telegram.
-UPDATE: Removed all category headers, just clean job posts
+UPDATED: Preserve original titles, only clean not replace
 """
 
 import os
@@ -106,51 +106,53 @@ def clean_location(location: str) -> str:
 
 
 def clean_title(title: str) -> str:
-    """Aggressively clean job title - remove URLs, fix broken text"""
+    """
+    Clean job title - remove URLs and garbage but KEEP the actual title.
+    Do NOT replace with generic text.
+    """
     if not title:
         return "Job Opportunity"
+    
+    original_title = title
     
     # Remove any URLs completely
     title = re.sub(r'https?://[^\s]+', '', title)
     
-    # Remove common prefixes
-    title = re.sub(r'^(Job Scrapper,?\s*|Job Scraper,?\s*|Job Scrapper,?\s*)', '', title, flags=re.IGNORECASE)
-    title = re.sub(r'^(URGENTLY|WE\'RE|HIRING|VACANCY|JOB|POSITION|NOW HIRING)[:\s]+', '', title, flags=re.IGNORECASE)
+    # Remove "Job Scrapper" prefix if present
+    title = re.sub(r'^Job\s+Scrapper[,:]?\s*', '', title, flags=re.IGNORECASE)
+    title = re.sub(r'^Job\s+Scraper[,:]?\s*', '', title, flags=re.IGNORECASE)
+    
+    # Remove common prefixes (but keep the rest of the title)
+    title = re.sub(r'^(URGENTLY|WE\'RE|HIRING|VACANCY|NOW HIRING)[:\s]+', '', title, flags=re.IGNORECASE)
     
     # Remove @mentions
     title = re.sub(r'@\w+', '', title)
     
-    # Remove any remaining URL patterns
-    title = re.sub(r'\b(?:www\.|http\://|https\://)[^\s]+\b', '', title)
+    # Remove trailing words that got cut off (like single letters at the end)
+    title = re.sub(r'\s+[a-z]$', '', title)
     
-    # Remove "Job Opportunity" placeholder if there's better text
-    if "Job Opportunity" in title and len(title) > 20:
-        title = title.replace("Job Opportunity", "").strip()
-    
-    # Clean up "at CompanyName" patterns
-    title = re.sub(r'\s+at\s+', ' at ', title, flags=re.IGNORECASE)
-    
-    # Remove multiple spaces and trim
+    # Clean up multiple spaces
     title = re.sub(r'\s+', ' ', title)
     title = title.strip()
     
-    # If title is just "Job Opportunity" or similar, use "New Job Opening"
-    if title in ["Job Opportunity", "Opportunity", "Job", ""]:
-        return "New Job Opening"
+    # If after cleaning we have nothing, try to extract from original
+    if not title or len(title) < 3:
+        # Extract first 50 characters of original without URL
+        original_clean = re.sub(r'https?://[^\s]+', '', original_title)
+        original_clean = re.sub(r'^Job\s+Scrapper[,:]?\s*', '', original_clean, flags=re.IGNORECASE)
+        title = original_clean.strip()[:100]
     
-    # Capitalize first letter of each word (but keep common acronyms)
-    words = title.split()
-    capitalized_words = []
-    for word in words:
-        if word.upper() in ['LTD', 'INC', 'LLC', 'PLC', 'CEO', 'CTO', 'CFO', 'HR', 'IT']:
-            capitalized_words.append(word.upper())
-        else:
-            capitalized_words.append(word[0].upper() + word[1:] if len(word) > 1 else word)
-    title = ' '.join(capitalized_words)
+    # If still empty, return a generic but not completely useless
+    if not title or len(title) < 3:
+        return "Job Vacancy"
+    
+    # Capitalize first letter properly
+    if title and len(title) > 0:
+        title = title[0].upper() + title[1:] if len(title) > 1 else title
     
     # Limit length
-    if len(title) > 100:
-        title = title[:97] + "..."
+    if len(title) > 120:
+        title = title[:117] + "..."
     
     return title
 
@@ -173,9 +175,14 @@ def clean_company(company: str) -> str:
     
     # Remove broken text (words that are too short or single letters)
     words = company.split()
-    clean_words = [w for w in words if len(w) > 2 or w.upper() in ['LTD', 'INC', 'LLC', 'PLC']]
-    company = ' '.join(clean_words)
+    clean_words = []
+    for w in words:
+        if len(w) > 2 or w.upper() in ['LTD', 'INC', 'LLC', 'PLC', 'NG']:
+            clean_words.append(w)
+        elif len(w) == 2 and w.isalpha() and w.upper() in ['NG', 'UK', 'US']:
+            clean_words.append(w)
     
+    company = ' '.join(clean_words)
     company = company.strip()
     
     if len(company) > 50:
@@ -209,8 +216,8 @@ def is_job_posting(title: str, description: str) -> bool:
 
 
 def format_job(job: dict) -> str:
-    """Format job with NO headers, just clean job info"""
-    title = clean_title(job.get("title", "Job Opportunity"))
+    """Format job with clean fields - preserve original title"""
+    title = clean_title(job.get("title", ""))
     company = clean_company(job.get("company", ""))
     location = clean_location(job.get("location", ""))
     salary = job.get("salary", "")
@@ -243,7 +250,7 @@ def format_job(job: dict) -> str:
 
 
 def send_job(job: dict) -> bool:
-    """Send job to Telegram - no category headers"""
+    """Send job to Telegram"""
     url_link = job.get("url", "")
     
     if not url_link or not url_link.startswith("http"):
@@ -262,7 +269,6 @@ def send_job(job: dict) -> bool:
     
     message = format_job(job)
     
-    # No category headers - send job directly
     payload = {
         "chat_id": CHANNEL_ID,
         "text": message,
