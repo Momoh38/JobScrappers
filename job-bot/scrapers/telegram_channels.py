@@ -264,18 +264,42 @@ def scrape_channel(channel_username: str, limit: int = 20) -> list:
 
 
 def extract_job_title(text: str) -> str:
-    """Extract job title from message"""
+    """Extract job title from message - be more aggressive"""
     lines = text.split('\n')
     
+    # First, look for common job title patterns
+    patterns = [
+        r'(?:We\'re|We are|We need a|Looking for a|Hiring a|Now hiring:?)\s+([A-Za-z\s/]+?)(?:\n|$|\.)',
+        r'([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s+(?:Manager|Officer|Assistant|Coordinator|Specialist|Analyst|Developer|Engineer))',
+        r'(JOB TITLE:|POSITION:|ROLE:|VACANCY:?)\s*([A-Za-z\s/]+?)(?:\n|$)',
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            title = match.group(1) if len(match.groups()) > 0 else match.group(0)
+            title = title.strip()
+            if len(title) > 5 and len(title) < 100:
+                return title
+    
+    # If no pattern matches, look for the first line that isn't an @mention or link
     for line in lines[:5]:
         line = line.strip()
-        if line and len(line) > 5 and len(line) < 150:
+        # Skip empty lines, mentions, and URLs
+        if line and not line.startswith('@') and not line.startswith('http') and len(line) > 5 and len(line) < 150:
+            # Remove common prefixes
             cleaned = re.sub(r'^(URGENTLY|WE\'RE|HIRING|VACANCY|JOB|POSITION|NOW HIRING|🚨|🔥|💼)[:\s]+', '', line, flags=re.IGNORECASE)
             cleaned = re.sub(r'@\w+', '', cleaned)
-            cleaned = re.sub(r'\s*\([^)]*\)\s*$', '', cleaned)
             
-            if len(cleaned) > 5 and len(cleaned) < 100:
+            # Check if it looks like a job title (contains job-related words)
+            job_words = ['hiring', 'vacancy', 'position', 'officer', 'manager', 'assistant', 'developer', 'engineer', 'analyst', 'specialist']
+            if any(word in cleaned.lower() for word in job_words):
                 return cleaned[:100]
+    
+    # Last resort: check if the message itself is short and likely a title
+    first_line = lines[0].strip() if lines else ""
+    if first_line and len(first_line) < 100 and len(first_line) > 5:
+        return first_line[:100]
     
     return "Job Opportunity"
 
