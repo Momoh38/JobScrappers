@@ -111,9 +111,11 @@ def clean_title(title: str) -> str:
     Do NOT replace with generic text.
     """
     if not title:
+        print(f"     ⚠️ Empty title received in clean_title")
         return "Job Opportunity"
     
     original_title = title
+    print(f"     📝 Original title: {title[:80]}...")  # Debug print
     
     # Remove any URLs completely
     title = re.sub(r'https?://[^\s]+', '', title)
@@ -135,16 +137,17 @@ def clean_title(title: str) -> str:
     title = re.sub(r'\s+', ' ', title)
     title = title.strip()
     
-    # If after cleaning we have nothing, try to extract from original
+    # If after cleaning we have nothing, use original cleaned
     if not title or len(title) < 3:
-        # Extract first 50 characters of original without URL
+        # Extract first 100 characters of original without URL and without common garbage
         original_clean = re.sub(r'https?://[^\s]+', '', original_title)
         original_clean = re.sub(r'^Job\s+Scrapper[,:]?\s*', '', original_clean, flags=re.IGNORECASE)
-        title = original_clean.strip()[:100]
-    
-    # If still empty, return a generic but not completely useless
-    if not title or len(title) < 3:
-        return "Job Vacancy"
+        original_clean = re.sub(r'^(Opportunity|Vacancy|Job|Position)[:\s]*', '', original_clean, flags=re.IGNORECASE)
+        title = original_clean.strip()
+        
+        if not title or len(title) < 3:
+            print(f"     ⚠️ Could not extract title from: {original_title[:80]}")
+            return "Job Vacancy"
     
     # Capitalize first letter properly
     if title and len(title) > 0:
@@ -154,8 +157,8 @@ def clean_title(title: str) -> str:
     if len(title) > 120:
         title = title[:117] + "..."
     
+    print(f"     ✅ Cleaned title: {title[:80]}...")
     return title
-
 
 def clean_company(company: str) -> str:
     """Clean company name"""
