@@ -1,6 +1,6 @@
 """
 sender.py — Formats and sends job listings to Telegram.
-Updated: Monthly stats only (no after-run summaries)
+UPDATED: Removed descriptions, clean category headers, better location extraction
 """
 
 import os
@@ -18,45 +18,47 @@ BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 CHANNEL_ID = os.environ.get("TELEGRAM_CHANNEL_ID")
 BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
-# Categories
+# Nigerian states for location detection
+NIGERIAN_STATES = [
+    "Abia", "Adamawa", "Akwa Ibam", "Anambra", "Bauchi", "Bayelsa", "Benue",
+    "Borno", "Cross River", "Delta", "Ebonyi", "Edo", "Ekiti", "Enugu", "Gombe",
+    "Imo", "Jigawa", "Kaduna", "Kano", "Katsina", "Kebbi", "Kogi", "Kwara",
+    "Lagos", "Nasarawa", "Niger", "Ogun", "Ondo", "Osun", "Oyo", "Plateau",
+    "Rivers", "Sokoto", "Taraba", "Yobe", "Zamfara", "FCT", "Abuja",
+]
+
+# Categories (simplified)
 CATEGORIES = {
     "💻 Tech & Development": [
-        "developer", "engineer", "devops", "qa", "quality assurance",
-        "frontend", "backend", "fullstack", "full stack", "mobile", "flutter",
-        "react", "python", "javascript", "software", "web dev", "ui/ux", "data scientist",
-        "data analyst", "software engineer",
+        "developer", "engineer", "devops", "qa", "software", "web", "mobile",
+        "frontend", "backend", "fullstack", "data scientist", "data analyst",
     ],
     "📞 Customer Support": [
-        "customer support", "customer service", "customer success",
-        "customer care", "client support", "help desk", "live chat",
-        "chat support", "technical support", "virtual assistance",
-        "call center", "phone support", "email support",
-    ],
-    "🖊️ Writing & Content": [
-        "writer", "copywriter", "editor", "proofreader", "content",
-        "ghostwriter", "blogger", "journalist", "content writer",
+        "customer support", "customer service", "help desk", "technical support",
+        "call center", "client support",
     ],
     "🗂️ Virtual & Admin": [
         "virtual assistant", "administrative", "admin", "data entry",
         "executive assistant", "personal assistant", "office assistant",
-        "administrative assistant", "virtual assistance",
     ],
     "💰 Finance & Accounting": [
         "accountant", "bookkeeper", "finance", "payroll", "accounts",
         "financial analyst",
     ],
     "📣 Marketing & Sales": [
-        "marketing", "seo", "sales", "growth", "affiliate",
-        "social media", "email market", "business development",
-        "digital marketing",
+        "marketing", "seo", "sales", "growth", "social media", "business development",
     ],
     "🏗️ Project & Operations": [
-        "project manager", "operations", "program manager", "scrum",
-        "coordinator", "project coordinator",
+        "project manager", "operations", "program manager", "coordinator",
     ],
     "🌍 NGO & UN": [
-        "un ", "ngo", "undp", "unicef", "who", "world bank", "united nations",
-        "non-profit", "nonprofit", "field assistant", "relief",
+        "un ", "ngo", "undp", "unicef", "who", "united nations", "non-profit",
+    ],
+    "📝 Writing & Content": [
+        "writer", "copywriter", "editor", "content", "proofreader",
+    ],
+    "🎓 Teaching & Training": [
+        "tutor", "teacher", "trainer", "instructor", "lecturer",
     ],
 }
 
@@ -108,108 +110,187 @@ def send_with_retry(url, payload, retry_count=0):
 
 
 def get_category(job: dict) -> str:
+    """Determine job category from title"""
     title = job.get("title", "").lower()
-    tags = job.get("tags", "").lower()
-    combined = f"{title} {tags}"
     for category, keywords in CATEGORIES.items():
-        if any(kw in combined for kw in keywords):
+        if any(kw in title for kw in keywords):
             return category
     return "🌐 General / Remote"
 
 
-def escape_markdown(text: str) -> str:
-    """Escape markdown special characters"""
-    if not text:
-        return ""
-    text = str(text)
-    text = text.replace('_', '\\_')
-    text = text.replace('*', '\\*')
-    text = text.replace('`', '\\`')
-    text = text.replace('[', '\\[')
-    text = text.replace(']', '\\]')
-    text = text.replace('(', '\\(')
-    text = text.replace(')', '\\)')
-    return text
+def clean_location(location: str) -> str:
+    """Clean and standardize location, extract Nigerian states"""
+    if not location or location == "Not specified":
+        return "Remote"
+    
+    location = str(location)
+    
+    # Check for Nigerian states
+    for state in NIGERIAN_STATES:
+        if state.lower() in location.lower():
+            return state
+    
+    # Check for common location patterns
+    if "lagos" in location.lower():
+        return "Lagos"
+    if "abuja" in location.lower():
+        return "Abuja"
+    if "remote" in location.lower():
+        return "Remote"
+    if "worldwide" in location.lower() or "global" in location.lower():
+        return "Remote (Worldwide)"
+    
+    # Clean up common issues
+    location = re.sub(r'NG,\s*', '', location, flags=re.I)
+    location = re.sub(r',\s*NG$', '', location, flags=re.I)
+    location = location.replace("NG", "").strip()
+    
+    # Limit length
+    if len(location) > 30:
+        location = location[:30]
+    
+    return location if location else "Remote"
 
 
-def clean_text(text: str, max_length: int = 800) -> str:
-    """Clean and truncate text"""
-    if not text:
-        return ""
+def clean_title(title: str) -> str:
+    """Clean and standardize job title"""
+    if not title or title == "Opportunity":
+        return "Job Opportunity"
     
-    text = re.sub(r'<[^>]+>', ' ', text)
-    text = text.replace('&nbsp;', ' ')
-    text = text.replace('&amp;', '&')
-    text = text.replace('&lt;', '<')
-    text = text.replace('&gt;', '>')
-    text = text.replace('\\/', '/')
-    text = re.sub(r'\s+', ' ', text)
-    text = text.strip()
+    # Remove common prefixes
+    title = re.sub(r'^(URGENTLY|WE\'RE|HIRING|VACANCY|JOB|POSITION|NOW HIRING)[:\s]+', '', title, flags=re.IGNORECASE)
     
-    if len(text) > max_length:
-        text = text[:max_length].strip() + "..."
+    # Remove @mentions
+    title = re.sub(r'@\w+', '', title)
     
-    return text
+    # Remove trailing garbage
+    title = re.sub(r'\s*\([^)]*\)\s*$', '', title)
+    
+    # Clean up extra spaces
+    title = re.sub(r'\s+', ' ', title)
+    title = title.strip()
+    
+    # Limit length
+    if len(title) > 100:
+        title = title[:97] + "..."
+    
+    return title if title else "Job Opportunity"
+
+
+def clean_company(company: str) -> str:
+    """Clean company name"""
+    if not company or company == "Not specified":
+        return "Not specified"
+    
+    # Remove @mentions
+    company = re.sub(r'@\w+', '', company)
+    
+    # Remove common prefixes
+    company = re.sub(r'^(Company:?\s*|via\s*)', '', company, flags=re.IGNORECASE)
+    
+    # Clean up
+    company = company.strip()
+    
+    if len(company) > 50:
+        company = company[:47] + "..."
+    
+    return company if company else "Not specified"
+
+
+def is_job_posting(title: str, description: str) -> bool:
+    """Filter out non-job postings (YouTube videos, articles, etc.)"""
+    combined = f"{title.lower()} {description.lower()}"
+    
+    # Keywords that indicate NOT a job posting
+    non_job_keywords = [
+        'youtube.com', 'youtu.be', 'watch now', 'subscribe', 'video',
+        'this video', 'click here', 'read more', 'article', 'blog post',
+        'tips', 'how to', 'guide', 'age discrimination', 'career advice',
+    ]
+    
+    for keyword in non_job_keywords:
+        if keyword in combined:
+            return False
+    
+    # Must have job-related keywords
+    job_keywords = [
+        'hiring', 'vacancy', 'recruitment', 'job', 'position', 'career',
+        'opportunity', 'role', 'staff', 'officer', 'manager', 'assistant',
+        'developer', 'engineer', 'analyst', 'specialist', 'coordinator',
+    ]
+    
+    return any(keyword in combined for keyword in job_keywords)
 
 
 def format_job(job: dict) -> str:
-    """Format job with clean text"""
-    title = clean_text(job.get("title", "Job Opportunity"), 100)
-    company = clean_text(job.get("company", "Not specified"), 50)
-    location = clean_text(job.get("location", "Remote"), 50)
-    salary = clean_text(job.get("salary", ""), 80)
-    description = clean_text(job.get("description", ""), 600)
-    source = clean_text(job.get("source", ""), 50)
+    """Format job with NO description, just clean headers"""
+    title = clean_title(job.get("title", "Job Opportunity"))
+    company = clean_company(job.get("company", "Not specified"))
+    location = clean_location(job.get("location", ""))
+    salary = job.get("salary", "")
     quality = job.get("_quality", 3)
     priority = job.get("_priority", False)
+    source = job.get("source", "")
 
     stars = "⭐" * quality
-    priority_tag = "🔴 *PRIORITY MATCH*\n" if priority else ""
+    priority_tag = "🔴 PRIORITY MATCH\n" if priority else ""
 
     lines = [priority_tag]
     
-    if title:
-        lines.append(f"💼 *{escape_markdown(title)}*")
+    if priority_tag:
+        lines.append("")
+    
+    lines.append(f"💼 {title}")
+    
     if company and company != "Not specified":
-        lines.append(f"🏢 {escape_markdown(company)}")
-    if location and location != "Remote / Worldwide":
-        lines.append(f"📍 {escape_markdown(location)}")
+        lines.append(f"🏢 {company}")
+    
+    if location:
+        lines.append(f"📍 {location}")
+    
     if salary:
-        lines.append(f"💰 {escape_markdown(salary)}")
+        lines.append(f"💰 {salary}")
     
     lines.append(f"✨ Quality: {stars}")
     
-    if description and description != "Click the 'Apply Now' button below for more details about this position.":
-        lines.append(f"\n📋 {escape_markdown(description)}")
-    elif description:
-        lines.append(f"\n📋 {description}")
+    # NO DESCRIPTION - just the apply button
     
     if source:
-        lines.append(f"\n_Source: {escape_markdown(source)}_")
+        lines.append(f"\n_Source: {source}_")
 
-    return "\n".join(l for l in lines if l)
+    return "\n".join(lines)
 
 
 def send_job(job: dict) -> bool:
-    """Send job to Telegram"""
+    """Send job to Telegram - NO description, just clean message"""
     url_link = job.get("url", "")
     
     if not url_link or not url_link.startswith("http"):
         print(f"     ⚠️ No valid URL for job: {job.get('title', '?')[:50]}")
         return False
     
+    # Skip Telegram internal links
     if 't.me' in url_link or 'telegram.me' in url_link:
         print(f"     ⚠️ Skipping Telegram link")
+        return False
+    
+    # Filter out non-job postings
+    title = job.get("title", "")
+    description = job.get("description", "")
+    if not is_job_posting(title, description):
+        print(f"     🚫 Filtered (not a job): {title[:40]}")
         return False
     
     message = format_job(job)
     category = get_category(job)
     
+    # Send category header once per run
     if category not in _sent_category_headers:
-        _send_text(f"\n{category}\n{'─' * 23}")
+        _send_text(f"\n{category}\n{'─' * 30}")
         _sent_category_headers.add(category)
         time.sleep(0.5)
     
+    # Build payload with apply button
     payload = {
         "chat_id": CHANNEL_ID,
         "text": message,
@@ -226,31 +307,25 @@ def send_job(job: dict) -> bool:
     
     if success:
         priority_flag = " 🔴" if job.get("_priority") else ""
-        print(f"     ✅ Sent{priority_flag}: {job.get('title', '?')[:50]}...")
+        print(f"     ✅ Sent{priority_flag}: {title[:50]}...")
         return True
     else:
-        print(f"     ❌ Failed: {job.get('title', '?')[:50]}")
+        print(f"     ❌ Failed: {title[:50]}")
         return False
 
 
 def send_stats(stats: dict):
-    """
-    Send run summary - DISABLED by default.
-    Only sends if it's the first day of the month (monthly report).
-    """
+    """Send monthly report only"""
     today = datetime.now()
     
-    # Only send on the 1st day of each month
     if today.day == 1:
         send_monthly_report(stats)
     else:
-        # Silent - no message sent
-        print(f"     📊 Stats recorded (no message sent - next monthly report on {today.replace(day=1).strftime('%B 1st')})")
-        pass
+        print(f"     📊 Stats recorded (next report on {today.replace(day=1).strftime('%B 1st')})")
 
 
 def send_monthly_report(stats: dict):
-    """Send monthly summary report (first day of each month)"""
+    """Send monthly summary report"""
     now = datetime.now()
     last_month = now.strftime("%B %Y")
     
@@ -263,35 +338,20 @@ def send_monthly_report(stats: dict):
         f"📡 Active sources: *{stats.get('sources', 0)}*\n",
     ]
     
-    # Add top sources
     breakdowns = stats.get("source_counts", {})
     if breakdowns:
         top = sorted(breakdowns.items(), key=lambda x: x[1], reverse=True)[:5]
         lines.append("*Top sources this month:*")
         for src, count in top:
             if count > 0:
-                lines.append(f"  • {escape_markdown(src)}: {count} jobs")
-    
-    # Calculate next month
-    if now.month == 12:
-        next_month = f"January 1st, {now.year + 1}"
-    else:
-        next_month = f"{now.replace(day=1, month=now.month + 1).strftime('%B 1st, %Y')}"
-    
-    lines.append(f"\n_Next report: {next_month}_")
+                lines.append(f"  • {src}: {count} jobs")
     
     _send_text("\n".join(lines))
-    print(f"     📊 Monthly report sent for {last_month}")
 
 
 def send_health_alert(scraper_name: str, consecutive_failures: int):
-    """Send health alert when a scraper fails repeatedly"""
-    msg = (
-        f"⚠️ *Health Alert*\n"
-        f"`{scraper_name}` has failed "
-        f"*{consecutive_failures}* runs in a row.\n"
-        f"It may need fixing."
-    )
+    """Send health alert"""
+    msg = f"⚠️ *Health Alert*\n`{scraper_name}` failed {consecutive_failures} times."
     _send_text(msg)
 
 
