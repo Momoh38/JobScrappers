@@ -341,22 +341,6 @@ def run():
     if failed:
         print(f"   ❌ Failed: {', '.join(failed)}")
 
-# After collecting jobs, before sending
-for job in all_jobs:
-    # If title is generic, try to extract from URL
-    if job.get('title') in ["Opportunity", "Job Opportunity", "Job Vacancy", "", None]:
-        url = job.get('url', '')
-        if url:
-            # Extract from URL path
-            url_parts = url.split('/')
-            for part in url_parts:
-                if '-' in part and len(part) > 10:
-                    # Convert URL slug to title (replace - with space, capitalize)
-                    potential_title = part.replace('-', ' ').replace('_', ' ').title()
-                    if len(potential_title) > 5 and len(potential_title) < 100:
-                        job['title'] = potential_title
-                        break
-
 
 if __name__ == "__main__":
     run()
