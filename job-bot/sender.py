@@ -120,19 +120,19 @@ def send_job(job: dict) -> bool:
     # Send the message first
     success = send_with_retry(f"{BASE_URL}/sendMessage", payload)
     
-    if success:
+    #if success:
         # Then send the link as a separate message with button
-        link_payload = {
-            "chat_id": CHANNEL_ID,
-            "text": "🔗 Apply Now",
-            "parse_mode": "Markdown",
-            "disable_web_page_preview": True,
-            "reply_markup": {
-                "inline_keyboard": [[
-                    {"text": "🔗 Click Here to Apply", "url": url_link}
-                ]]
-            }
-        }
+     #   link_payload = {
+      #      "chat_id": CHANNEL_ID,
+       #     "text": "🔗 Apply Now",
+        #    "parse_mode": "Markdown",
+         #   "disable_web_page_preview": True,
+          #  "reply_markup": {
+           #     "inline_keyboard": [[
+            #        {"text": "🔗 Click Here to Apply", "url": url_link}
+             #   ]]
+       #     }
+        #}
         link_success = send_with_retry(f"{BASE_URL}/sendMessage", link_payload)
         
         if link_success:
