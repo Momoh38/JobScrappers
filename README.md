@@ -1,6 +1,6 @@
 # 🔍 JobScrappers
 
-> A fully automated job alert bot that scrapes **15+ job platforms** and delivers clean job listings directly to your private **Telegram channel** every 30 minutes — completely free.
+> A fully automated job alert bot that scrapes **job platforms** and delivers clean job listings directly to your **Telegram channel** every 30 minutes — completely free.
 
 ---
 
