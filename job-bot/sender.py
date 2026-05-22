@@ -1,6 +1,6 @@
 """
 sender.py — Formats and sends job listings to Telegram.
-UPDATED: Super simple - just title and apply link
+UPDATED: Just title with inline button
 """
 
 import os
@@ -89,7 +89,7 @@ def clean_title(title: str) -> str:
 
 
 def send_job(job: dict) -> bool:
-    """Send job to Telegram - super simple format"""
+    """Send job to Telegram - just title with inline button"""
     url_link = job.get("url", "")
     
     if not url_link or not url_link.startswith("http"):
@@ -103,46 +103,26 @@ def send_job(job: dict) -> bool:
     # Clean the title
     title = clean_title(job.get("title", "Job Opportunity"))
     
-    # Simple message - just the title
-    message = f"💼 {title}"
-    
-    # Add a note to click the link
-    message += f"\n\n📌 Click the link below for details and to apply:"
-    
-    # Send as a single message with the link
+    # Just the title - button will appear below automatically
     payload = {
         "chat_id": CHANNEL_ID,
-        "text": message,
+        "text": f"💼 {title}",
         "parse_mode": "Markdown",
-        "disable_web_page_preview": False,  # Show link preview
+        "disable_web_page_preview": True,
+        "reply_markup": {
+            "inline_keyboard": [[
+                {"text": "🔗 Apply Now", "url": url_link}
+            ]]
+        }
     }
     
-    # Send the message first
     success = send_with_retry(f"{BASE_URL}/sendMessage", payload)
     
-    #if success:
-        # Then send the link as a separate message with button
-     #   link_payload = {
-      #      "chat_id": CHANNEL_ID,
-       #     "text": "🔗 Apply Now",
-        #    "parse_mode": "Markdown",
-         #   "disable_web_page_preview": True,
-          #  "reply_markup": {
-           #     "inline_keyboard": [[
-            #        {"text": "🔗 Click Here to Apply", "url": url_link}
-             #   ]]
-       #     }
-        #}
-        link_success = send_with_retry(f"{BASE_URL}/sendMessage", link_payload)
-        
-        if link_success:
-            print(f"     ✅ Sent: {title[:50]}...")
-            return True
-        else:
-            print(f"     ❌ Failed to send link button")
-            return False
+    if success:
+        print(f"     ✅ Sent: {title[:50]}...")
+        return True
     else:
-        print(f"     ❌ Failed to send: {title[:50]}")
+        print(f"     ❌ Failed: {title[:50]}")
         return False
 
 
