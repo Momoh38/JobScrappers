@@ -1,7 +1,4 @@
-"""
-main.py — Entry point for Job Scraper Bot
-UPDATED: Telegram jobs are ALWAYS kept (Nigeria-friendly)
-"""
+""" main.py — Entry point for Job Scraper Bot """
 
 import json
 import os
