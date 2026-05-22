@@ -1,7 +1,4 @@
-"""
-sender.py — Formats and sends job listings to Telegram.
-UPDATED: Just title with inline button
-"""
+""" sender.py — Formats and sends job listings to Telegram. """
 
 import os
 import requests
