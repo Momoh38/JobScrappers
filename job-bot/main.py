@@ -31,6 +31,8 @@ from scrapers.braintrust      import scrape_braintrust
 from scrapers.himalayas       import scrape_himalayas
 from scrapers.wfh_io          import scrape_wfh_io
 from scrapers.virtustant      import scrape_virtustant
+from scrapers.hireeast import scrape_hireeast
+from scrapers.revicemycv import scrape_revicemycv
 
 # Social Media - GOOD (Nigeria-friendly, NEVER filter)
 from scrapers.telegram_channels import scrape_telegram_channels
@@ -209,7 +211,10 @@ def run():
         ("Himalayas",           scrape_himalayas),
         ("WFH.io",              scrape_wfh_io),
         ("Virtustant",          scrape_virtustant),
-        
+
+        # NEW SOURCES (Africa-based, Nigeria-accessible)
+        ("HireEast",            scrape_hireeast),
+        ("ReviceMyCV",          scrape_revicemycv),
         # Social Media (NEVER FILTER - Nigerian job groups)
         ("Telegram",            scrape_telegram_channels),
     ]
