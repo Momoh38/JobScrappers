@@ -19,6 +19,7 @@ TELEGRAM_JOB_CHANNELS = [
     "WorkaNigeria",
     "remotejobss",
     "techjobsworld",
+    "dixcoverhub",
 ]
 
 # Common job application domains (prioritize these)
