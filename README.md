@@ -116,23 +116,23 @@ Every time the bot runs (every 30 minutes via GitHub Actions), it follows these 
 | ReviceMyCV | ✅ Active |
 
 ### International / NGO / Africa (3 sources)
-| Scraper || Status |
+| Scraper | Status |
 |---------|--------|
 | NGO / UN Jobs | ✅ Active |
-| Africa Jobs || ✅ Active |
-| HireEast | ✅ Active |
+| Africa Jobs | ✅ Active |
+| HireEast| ✅ Active |
 
 ### Global Remote (8 sources)
-| Scraper || Status |
-|---------|-|--------|
+| Scraper | Status |
+|---------|--------|
 | RemoteOK | ✅ Active |
 | Remotive | ✅ Active |
 | TheMuse | ✅ Active |
 | Himalayas | ✅ Active |
-| WFH.io || ✅ Active |
-| Virtustant || ✅ Active |
-| WorkingNomads || ✅ Active |
-| Braintrust || ✅ Active |
+| WFH.io | ✅ Active |
+| Virtustant | ✅ Active |
+| WorkingNomads | ✅ Active |
+| Braintrust | ✅ Active |
 
 ### Social Media (1 source — 7 channels)
 | Channel | Status |
