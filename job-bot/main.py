@@ -50,14 +50,6 @@ from scrapers.revicemycv import scrape_revicemycv
 # Social Media - GOOD (Nigeria-friendly, NEVER filter)
 from scrapers.telegram_channels import scrape_telegram_channels
 
-# --- REMOVED (Only these are actually payment required, so NO stealing ) ---
-# from scrapers.weworkremotely  import scrape_weworkremotely # ❌ Requires payment
-# from scrapers.jobicy          import scrape_jobicy        # ❌ Chinese jobs
-# from scrapers.indeed_ng       import scrape_indeed_ng     # ❌ 403 Forbidden
-# from scrapers.grabjobs        import scrape_grabjobs      # ❌ 403 Forbidden
-# from scrapers.jooble          import scrape_jooble        # ❌ Paid API
-# from scrapers.dailyremote     import scrape_dailyremote   # ❌ 403 Forbidden
-
 
 from filter import is_halal
 from sender import send_job, send_stats, send_health_alert
