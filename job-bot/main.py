@@ -1,3 +1,16 @@
+"""
+JobScrappers - Job Aggregation Bot
+
+IMPORTANT LEGAL NOTICE:
+1. This tool scrapes publicly available job listings.
+2. It does not bypass any paywalls or authentication.
+3. All data remains the property of respective websites.
+4. For educational/non-commercial use only.
+5. Respect robots.txt and Terms of Service of all sources.
+6. If you are a website owner and want your source removed, contact me.
+
+USE AT YOUR OWN RISK.
+"""
 """ main.py — Entry point for Job Scraper Bot """
 
 import json
@@ -37,7 +50,7 @@ from scrapers.revicemycv import scrape_revicemycv
 # Social Media - GOOD (Nigeria-friendly, NEVER filter)
 from scrapers.telegram_channels import scrape_telegram_channels
 
-# --- REMOVED (Only these are actually paid/broken) ---
+# --- REMOVED (Only these are actually payment required, so NO stealing ) ---
 # from scrapers.weworkremotely  import scrape_weworkremotely # ❌ Requires payment
 # from scrapers.jobicy          import scrape_jobicy        # ❌ Chinese jobs
 # from scrapers.indeed_ng       import scrape_indeed_ng     # ❌ 403 Forbidden
