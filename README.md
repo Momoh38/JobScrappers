@@ -125,14 +125,14 @@ Every time the bot runs (every 30 minutes via GitHub Actions), it follows these 
 ### Global Remote (8 sources)
 | Scraper | Source | Status |
 |---------|--------|--------|
-| RemoteOK | RemoteOK API | ✅ Active |
-| Remotive | Remotive API | ✅ Active |
-| TheMuse | The Muse API | ✅ Active |
-| WorkingNomads | JSON API | ✅ Active |
-| Braintrust | JSON API | ✅ Active |
+| RemoteOK | RemoteOK | ✅ Active |
+| Remotive | Remotive | ✅ Active |
+| TheMuse | The Muse  | ✅ Active |
 | Himalayas | Free API | ✅ Active |
-| WFH.io | HTML scraper | ✅ Active |
-| Virtustant | HTML scraper | ✅ Active |
+| WFH.io || ✅ Active |
+| Virtustant || ✅ Active |
+| WorkingNomads || ✅ Active |
+| Braintrust || ✅ Active |
 
 ### Social Media (1 source — 7 channels)
 | Channel | Status |
@@ -150,15 +150,6 @@ Every time the bot runs (every 30 minutes via GitHub Actions), it follows these 
 ## What Gets Filtered
 
 The bot automatically filters out jobs that Nigerians cannot apply to:
-
-| Filter Type | Examples |
-|-------------|----------|
-| 🇩🇪 German Jobs | Jobs in German language or requiring German |
-| 🇨🇳 Chinese Jobs | Jobs in Chinese or located in China |
-| 🌍 Location Restricted | US-only, Canada-only, UK-only, Europe-only |
-| 🌏 Region Restricted | Asia-only, Latin America, Philippines, Brazil |
-| 🇮🇱 Restricted Countries | Israel jobs |
-| 📅 Old Jobs | Jobs older than 14 days (configurable) |
 
 ### What Gets Through (All Free to Apply):
 - ✅ Nigerian-based jobs (Lagos, Abuja, all 36 states)
@@ -203,7 +194,7 @@ The bot automatically filters out jobs that Nigerians cannot apply to:
 
 **Option B: Create new repository**
 1. Go to github.com → **+** → **New repository**
-2. Name it `JobScarppers`
+2. Name it `JobScarppers` or whichever
 3. Set to **Private** (recommended)
 4. Upload all project files
 
@@ -406,19 +397,3 @@ Edit `config.py` to add priority keywords. For deeper changes, modify `filter.py
 - **Quick fixes:** Check Actions logs, verify secrets, test manually
 
 ---
-
-```
-
-## Summary of What Was Updated:
-
-| Section | Change |
-|---------|--------|
-| Quick Links | Added legal documentation links |
-| Project Structure | Added new files (LICENSE, DISCLAIMER, CONTRIBUTING, SECURITY, CODE_OF_CONDUCT) |
-| Job Sources | Added HireEast and ReviceMyCV (17 total) |
-| Legal & Documentation | New section with links to all legal files |
-| Important Legal Notice | Clear disclaimer about scraping |
-| Recent Updates | v3.0 changelog |
-| License | MIT License reference |
-
-Your README is now complete and professional! 🎯
