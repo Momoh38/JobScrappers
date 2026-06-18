@@ -107,28 +107,28 @@ Every time the bot runs (every 30 minutes via GitHub Actions), it follows these 
 ## Job Sources (17 Active)
 
 ### Nigeria-Specific (5 sources)
-| Scraper | Source | Status |
-|---------|--------|--------|
-| Jobberman | Nigerian job board | ✅ Active |
-| MyJobMag | Nigerian job board | ✅ Active |
-| NGCareers | Nigerian job board | ✅ Active |
-| JobGurus | Nigerian job board | ✅ Active |
-| ReviceMyCV | Nigeria & International jobs | ✅ Active |
+| Scraper | Status |
+|---------|--------|
+| Jobberman | ✅ Active |
+| MyJobMag | ✅ Active |
+| NGCareers | ✅ Active |
+| JobGurus | ✅ Active |
+| ReviceMyCV | ✅ Active |
 
 ### International / NGO / Africa (3 sources)
-| Scraper | Source | Status |
-|---------|--------|--------|
-| NGO / UN Jobs | ReliefWeb API | ✅ Active |
-| Africa Jobs | African job boards | ✅ Active |
-| HireEast | East African job board | ✅ Active |
+| Scraper || Status |
+|---------|--------|
+| NGO / UN Jobs | ✅ Active |
+| Africa Jobs || ✅ Active |
+| HireEast | ✅ Active |
 
 ### Global Remote (8 sources)
-| Scraper | Source | Status |
-|---------|--------|--------|
-| RemoteOK | RemoteOK | ✅ Active |
-| Remotive | Remotive | ✅ Active |
-| TheMuse | The Muse  | ✅ Active |
-| Himalayas | Free API | ✅ Active |
+| Scraper || Status |
+|---------|-|--------|
+| RemoteOK | ✅ Active |
+| Remotive | ✅ Active |
+| TheMuse | ✅ Active |
+| Himalayas | ✅ Active |
 | WFH.io || ✅ Active |
 | Virtustant || ✅ Active |
 | WorkingNomads || ✅ Active |
