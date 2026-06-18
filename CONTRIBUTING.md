@@ -66,18 +66,18 @@ Add the scraper to main.py
 Add the source to the README
 
 ### 6. Pull Request Process
-Ensure your code passes all checks
+1. **Ensure your code passes all checks**
 
-Update the README if adding a new source
+2. **Update the README if adding a new source**
 
-Add yourself to the contributors list (optional)
+3. **Add yourself to the contributors list (optional)**
 
-Submit the pull request with a clear description
+4. **Submit the pull request with a clear description**
 
-Be responsive to review feedback
+5. **Be responsive to review feedback**
 
-Code of Conduct
+### Code of Conduct
 Please be respectful and constructive in all interactions. We aim to build a positive, inclusive community.
 
-License
+### License
 By contributing, you agree that your contributions will be licensed under the project's MIT License.
