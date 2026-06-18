@@ -23,7 +23,7 @@ A fully automated job alert bot that scrapes **15+ job platforms** across the we
 
 **Simply join our Telegram channel to start receiving daily job alerts:**
 
-👉 **[Click here to join JobScrappers Telegram Channel](https://t.me/your_channel_link)**
+👉 **[Click here to join JobScrappers Telegram Channel](https://t.me/+bJOD6zoeb4BiZjJk)**
 
 No setup required. Just join and wait for jobs to appear automatically.
 
