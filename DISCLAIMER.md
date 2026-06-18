@@ -21,7 +21,7 @@ This project, JobScrappers, is a non-commercial, open-source tool created for ed
 
 ### Compliance
 - If any website owner requests removal of their data, it will be done promptly.
-- Contact: [Your Email]
+- Contact: "Your Email"
 
 ### Use at Your Own Risk
 By using this tool, you agree that you are using it at your own risk and that you will not hold the creator liable for any consequences arising from its use.
