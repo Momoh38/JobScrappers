@@ -59,12 +59,13 @@ def scrape_newsource():
     jobs = []
     # Your scraping logic here
     return jobs
+```
 
 Add the scraper to main.py
 
 Add the source to the README
 
-6. Pull Request Process
+### 6. Pull Request Process
 Ensure your code passes all checks
 
 Update the README if adding a new source
