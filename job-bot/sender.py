@@ -15,6 +15,14 @@ BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 CHANNEL_ID = os.environ.get("TELEGRAM_CHANNEL_ID")
 BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
+# Add delay between ALL requests (not just between scrapers)
+REQUESTS_DELAY = 2  # seconds between scraping requests
+
+# In your scraper code, add:
+def scrape_with_delay(scraper_func):
+    time.sleep(REQUESTS_DELAY)
+    return scraper_func()
+
 
 def send_with_retry(url, payload, retry_count=0):
     """Send with retry for rate limiting"""
