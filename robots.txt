@@ -1,0 +1,10 @@
+# JobScrappers - Educational Bot
+# Please respect website Terms of Service
+
+User-agent: *
+Disallow: /
+
+# We strongly recommend users of this code to:
+# 1. Respect robots.txt of target websites
+# 2. Not overload servers with requests
+# 3. Use for non-commercial purposes only
