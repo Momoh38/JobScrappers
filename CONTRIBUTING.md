@@ -59,3 +59,24 @@ def scrape_newsource():
     jobs = []
     # Your scraping logic here
     return jobs
+
+Add the scraper to main.py
+
+Add the source to the README
+
+6. Pull Request Process
+Ensure your code passes all checks
+
+Update the README if adding a new source
+
+Add yourself to the contributors list (optional)
+
+Submit the pull request with a clear description
+
+Be responsive to review feedback
+
+Code of Conduct
+Please be respectful and constructive in all interactions. We aim to build a positive, inclusive community.
+
+License
+By contributing, you agree that your contributions will be licensed under the project's MIT License.
