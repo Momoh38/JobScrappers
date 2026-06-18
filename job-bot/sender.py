@@ -15,6 +15,11 @@ BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 CHANNEL_ID = os.environ.get("TELEGRAM_CHANNEL_ID")
 BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
+headers = {
+    'User-Agent': 'JobScrappers/3.0 (Educational Project; github.com/yourusername/JobScarppers)',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9',
+}
+
 # Add delay between ALL requests (not just between scrapers)
 REQUESTS_DELAY = 2  # seconds between scraping requests
 
