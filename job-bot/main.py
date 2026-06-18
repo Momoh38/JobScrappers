@@ -67,6 +67,17 @@ HEALTH_FILE    = "scraper_health.json"
 STATS_FILE     = "run_stats.json"
 
 
+domain_request_count = {}
+MAX_REQUESTS_PER_DOMAIN_PER_RUN = 30
+
+def check_rate_limit(domain):
+    if domain in domain_request_count:
+        if domain_request_count[domain] >= MAX_REQUESTS_PER_DOMAIN_PER_RUN:
+            print(f"⚠️ Rate limit reached for {domain}, skipping...")
+            return False
+    domain_request_count[domain] = domain_request_count.get(domain, 0) + 1
+    return True
+
 # Countries/locations to filter out (Nigerians can't apply)
 FILTER_LOCATIONS = [
     # Specific countries
