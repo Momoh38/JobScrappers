@@ -353,12 +353,6 @@ This bot scrapes **publicly available** job listings from various websites. It d
 ### Is this really free?
 **Yes.** All job sources are free to apply. GitHub Actions free tier handles the automation.
 
-### How many jobs will I get?
-- Nigerian job boards: 10-30 jobs/day
-- Remote global jobs: 20-50 jobs/day
-- Telegram groups: 5-15 jobs/day
-- **Total: 50-150 jobs/day**
-
 ### What if my laptop is off?
 The bot runs on GitHub's cloud servers. Your laptop can be completely off.
 
@@ -370,17 +364,6 @@ Yes! Follow the "Add a New Job Source" guide above.
 
 ### Can I change what jobs are sent?
 Edit `config.py` to add priority keywords. For deeper changes, modify `filter.py`.
-
----
-
-## Recent Updates (v3.0)
-
-- ✅ **Added HireEast** — East African job board
-- ✅ **Added ReviceMyCV** — Nigeria & International jobs
-- ✅ **Clean Telegram messages** — Just title + Apply Now button
-- ✅ **Updated documentation** — Full legal and contributing guides
-- ✅ **New license** — MIT License
-- ✅ **Security & disclaimers** — Added DISCLAIMER.md, SECURITY.md, CODE_OF_CONDUCT.md
 
 ---
 
