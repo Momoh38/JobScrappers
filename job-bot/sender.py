@@ -1,9 +1,13 @@
-""" sender.py — Formats and sends job listings to Telegram. """
+"""
+sender.py — Formats and sends job listings to Telegram.
+UPDATED: Monthly reports only + cumulative total jobs
+"""
 
 import os
 import requests
 import time
 import re
+import json
 from datetime import datetime
 
 # Rate limiting
@@ -15,18 +19,28 @@ BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 CHANNEL_ID = os.environ.get("TELEGRAM_CHANNEL_ID")
 BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
-headers = {
-    'User-Agent': 'JobScrappers/3.0 (Educational Project; github.com/yourusername/JobScarppers)',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9',
-}
+# File to track cumulative stats
+CUMULATIVE_STATS_FILE = "cumulative_stats.json"
 
-# Add delay between ALL requests (not just between scrapers)
-REQUESTS_DELAY = 2  # seconds between scraping requests
 
-# In your scraper code, add:
-def scrape_with_delay(scraper_func):
-    time.sleep(REQUESTS_DELAY)
-    return scraper_func()
+def load_cumulative_stats():
+    """Load cumulative stats from file"""
+    if os.path.exists(CUMULATIVE_STATS_FILE):
+        try:
+            with open(CUMULATIVE_STATS_FILE, 'r') as f:
+                return json.load(f)
+        except:
+            pass
+    return {"total_jobs_found": 0, "total_jobs_sent": 0, "total_months": 0, "first_run": datetime.now().isoformat()}
+
+
+def save_cumulative_stats(stats):
+    """Save cumulative stats to file"""
+    try:
+        with open(CUMULATIVE_STATS_FILE, 'w') as f:
+            json.dump(stats, f, indent=2)
+    except:
+        pass
 
 
 def send_with_retry(url, payload, retry_count=0):
@@ -99,7 +113,7 @@ def clean_title(title: str) -> str:
 
 
 def send_job(job: dict) -> bool:
-    """Send job to Telegram - just title with inline button"""
+    """Send job to Telegram"""
     url_link = job.get("url", "")
     
     if not url_link or not url_link.startswith("http"):
@@ -113,10 +127,12 @@ def send_job(job: dict) -> bool:
     # Clean the title
     title = clean_title(job.get("title", "Job Opportunity"))
     
-    # Just the title - button will appear below automatically
+    # Build the message
+    message = f"💼 {title}"
+    
     payload = {
         "chat_id": CHANNEL_ID,
-        "text": f"💼 {title}",
+        "text": message,
         "parse_mode": "Markdown",
         "disable_web_page_preview": True,
         "reply_markup": {
@@ -137,9 +153,13 @@ def send_job(job: dict) -> bool:
 
 
 def send_stats(stats: dict):
-    """Send monthly report only"""
+    """
+    ONLY send monthly report (on the 1st of each month)
+    Includes cumulative totals from launch
+    """
     today = datetime.now()
     
+    # Only send on the 1st day of each month
     if today.day == 1:
         send_monthly_report(stats)
     else:
@@ -147,32 +167,67 @@ def send_stats(stats: dict):
 
 
 def send_monthly_report(stats: dict):
-    """Send monthly summary report"""
+    """Send monthly summary report with cumulative totals"""
     now = datetime.now()
     last_month = now.strftime("%B %Y")
     
+    # Load cumulative stats
+    cumulative = load_cumulative_stats()
+    
+    # Update cumulative stats with this month's data
+    cumulative["total_jobs_found"] += stats.get('sent', 0) + stats.get('filtered', 0)
+    cumulative["total_jobs_sent"] += stats.get('sent', 0)
+    cumulative["total_months"] += 1
+    cumulative["last_update"] = datetime.now().isoformat()
+    
+    # Save updated cumulative stats
+    save_cumulative_stats(cumulative)
+    
+    # Format first run date
+    first_run = datetime.fromisoformat(cumulative["first_run"]).strftime("%B %Y")
+    
+    # Build the report
     lines = [
         f"📊 *Monthly Job Report - {last_month}*",
         f"🕐 Generated: {now.strftime('%d %b %Y, %I:%M %p')}\n",
         f"📨 Jobs sent this month: *{stats.get('sent', 0)}*",
-        f"🚫 Filtered out: *{stats.get('filtered', 0)}*",
-        f"👁️ Already seen: *{stats.get('seen', 0)}*",
+        f"🚫 Filtered out this month: *{stats.get('filtered', 0)}*",
+        f"👁️ Already seen this month: *{stats.get('seen', 0)}*",
         f"📡 Active sources: *{stats.get('sources', 0)}*\n",
+        f"─" * 30,
+        f"\n📈 *Lifetime Stats (Since {first_run})*",
+        f"🔍 Total jobs found: *{cumulative['total_jobs_found']:,}*",
+        f"📨 Total jobs sent: *{cumulative['total_jobs_sent']:,}*",
+        f"📅 Months active: *{cumulative['total_months']}*",
     ]
     
+    # Add top sources for this month
     breakdowns = stats.get("source_counts", {})
     if breakdowns:
         top = sorted(breakdowns.items(), key=lambda x: x[1], reverse=True)[:5]
-        lines.append("*Top sources this month:*")
+        lines.append("\n*Top sources this month:*")
         for src, count in top:
             if count > 0:
                 lines.append(f"  • {src}: {count} jobs")
     
+    # Add top sources overall (if available)
+    if "source_counts" in cumulative:
+        top_overall = sorted(cumulative.get("source_counts", {}).items(), key=lambda x: x[1], reverse=True)[:3]
+        if top_overall:
+            lines.append("\n*Top sources overall:*")
+            for src, count in top_overall:
+                if count > 0:
+                    lines.append(f"  • {src}: {count} jobs")
+    
+    lines.append(f"\n_Next report: {now.replace(day=1, month=now.month+1).strftime('%B 1st, %Y') if now.month < 12 else 'January 1st, ' + str(now.year+1)}_")
+    
     _send_text("\n".join(lines))
+    print(f"     📊 Monthly report sent for {last_month}")
+    print(f"     📈 Total jobs found since launch: {cumulative['total_jobs_found']:,}")
 
 
 def send_health_alert(scraper_name: str, consecutive_failures: int):
-    """Send health alert"""
+    """Send health alert to main channel"""
     msg = f"⚠️ *Health Alert*\n`{scraper_name}` failed {consecutive_failures} times."
     _send_text(msg)
 
