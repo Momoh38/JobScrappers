@@ -30,6 +30,8 @@ from scrapers.jobberman       import scrape_jobberman
 from scrapers.myjobmag        import scrape_myjobmag
 from scrapers.ngcareers       import scrape_ngcareers
 from scrapers.jobgurus        import scrape_jobgurus
+# --- NEW SOURCE ---
+from scrapers.yeshub import scrape_yeshub
 
 # International / NGO / Africa - GOOD
 from scrapers.ngo_jobs        import scrape_ngo_jobs
@@ -213,6 +215,7 @@ def run():
         ("MyJobMag",            scrape_myjobmag),
         ("NGCareers",           scrape_ngcareers),
         ("JobGurus",            scrape_jobgurus),
+        ("YesHub",              scrape_yeshub),
         
         # International / NGO / Africa (NEVER FILTER)
         ("NGO / UN Jobs",       scrape_ngo_jobs),
