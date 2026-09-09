@@ -156,7 +156,7 @@ def is_nigeria_friendly(job: dict, source: str = "") -> bool:
     combined = strip_html(combined)
     
     # Telegram and Nigerian sources are ALWAYS kept
-    always_keep_sources = ["Telegram", "Jobberman", "MyJobMag", "NGCareers", "JobGurus", "Africa Jobs", "NGO / UN Jobs"]
+    always_keep_sources = ["Telegram", "Jobberman", "MyJobMag", "NGCareers", "JobGurus", "Africa Jobs", "NGO / UN Jobs", "YesHub"]
     if source in always_keep_sources:
         return True
     
