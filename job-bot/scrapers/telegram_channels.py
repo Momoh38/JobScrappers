@@ -20,6 +20,7 @@ TELEGRAM_JOB_CHANNELS = [
     "remotejobss",
     "techjobsworld",
     "dixcoverhub",
+    "yeshubchannel",
 ]
 
 # Common job application domains (prioritize these)
